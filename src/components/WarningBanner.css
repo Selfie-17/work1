@@ -1,0 +1,33 @@
+/* Warning Banner Styles */
+
+.warning-banner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 20px;
+    background: var(--blue-banner);
+    border-bottom: 1px solid rgba(24, 101, 168, 0.15);
+}
+
+.warning-banner p {
+    font-size: 13px;
+    color: var(--blue-banner-text);
+}
+
+.warning-banner a {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--blue-link);
+    font-weight: 500;
+}
+
+.warning-banner a:hover {
+    text-decoration: underline;
+}
+
+.warning-banner svg {
+    width: 14px;
+    height: 14px;
+}

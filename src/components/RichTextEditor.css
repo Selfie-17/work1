@@ -1,0 +1,365 @@
+/* Rich Text Editor Styles */
+
+.editor-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: var(--gray-100);
+    padding: 20px 40px;
+    overflow: hidden;
+}
+
+.editor-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    max-width: 900px;
+    margin: 0 auto;
+    width: 100%;
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+}
+
+/* Toolbar */
+.editor-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--gray-200);
+    background: var(--white);
+    flex-wrap: wrap;
+}
+
+.toolbar-group {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.toolbar-divider {
+    width: 1px;
+    height: 24px;
+    background: var(--gray-200);
+    margin: 0 8px;
+}
+
+.toolbar-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-sm);
+    color: var(--gray-600);
+    transition: all 0.15s;
+}
+
+.toolbar-btn:hover {
+    background: var(--gray-100);
+    color: var(--gray-800);
+}
+
+.toolbar-btn.active {
+    background: var(--gray-200);
+    color: var(--gray-900);
+}
+
+.toolbar-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* Paragraph Dropdown */
+.paragraph-select {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-sm);
+    background: var(--white);
+    font-size: 14px;
+    color: var(--gray-700);
+    cursor: pointer;
+    transition: all 0.15s;
+    min-width: 120px;
+}
+
+.paragraph-select:hover {
+    border-color: var(--gray-300);
+    background: var(--gray-50);
+}
+
+.paragraph-select svg {
+    width: 16px;
+    height: 16px;
+    margin-left: auto;
+    color: var(--gray-400);
+}
+
+/* Editor Content */
+.editor-content {
+    flex: 1;
+    padding: 32px 48px;
+    overflow-y: auto;
+    line-height: 1.7;
+    font-size: 16px;
+    color: var(--gray-800);
+}
+
+.editor-content:focus {
+    outline: none;
+}
+
+/* Content Styling */
+.editor-content h1 {
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: var(--gray-900);
+}
+
+.editor-content h2 {
+    font-size: 24px;
+    font-weight: 600;
+    margin-top: 24px;
+    margin-bottom: 12px;
+    color: var(--gray-900);
+}
+
+.editor-content h3 {
+    font-size: 20px;
+    font-weight: 600;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    color: var(--gray-800);
+}
+
+.editor-content p {
+    margin-bottom: 16px;
+}
+
+.editor-content .note {
+    font-style: italic;
+    color: var(--gray-600);
+    margin-bottom: 20px;
+}
+
+.editor-content ol,
+.editor-content ul {
+    margin-bottom: 16px;
+    padding-left: 24px;
+}
+
+.editor-content li {
+    margin-bottom: 12px;
+}
+
+.editor-content li p {
+    margin-bottom: 8px;
+}
+
+.editor-content strong {
+    font-weight: 600;
+}
+
+.editor-content em {
+    font-style: italic;
+}
+
+.editor-content u {
+    text-decoration: underline;
+}
+
+.editor-content a {
+    color: var(--blue-link);
+    text-decoration: underline;
+}
+
+.editor-content a:hover {
+    text-decoration: none;
+}
+
+/* Placeholder */
+.editor-content:empty::before {
+    content: 'Start writing...';
+    color: var(--gray-400);
+    pointer-events: none;
+}
+
+/* Table Styles */
+.editor-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+}
+
+.editor-content th,
+.editor-content td {
+    border: 1px solid var(--gray-200);
+    padding: 12px;
+    text-align: left;
+}
+
+.editor-content th {
+    background: var(--gray-50);
+    font-weight: 600;
+}
+
+/* Highlight */
+.editor-content mark {
+    background: rgba(255, 230, 0, 0.4);
+    padding: 0 2px;
+    border-radius: 2px;
+}
+
+/* AI Highlight */
+.ai-highlight {
+    background: rgba(20, 191, 150, 0.15);
+    border-left: 3px solid var(--teal-accent);
+    padding-left: 12px;
+    margin: 16px 0;
+}
+
+/* Link Modal */
+.link-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.link-modal {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    width: 100%;
+    max-width: 400px;
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+}
+
+.link-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.link-modal-header h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--gray-900);
+}
+
+.link-modal-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-sm);
+    color: var(--gray-500);
+    transition: all 0.15s;
+}
+
+.link-modal-close:hover {
+    background: var(--gray-100);
+    color: var(--gray-700);
+}
+
+.link-modal-body {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.link-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.link-input-group label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--gray-700);
+}
+
+.link-input-group input {
+    padding: 10px 12px;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    color: var(--gray-800);
+    transition: border-color 0.15s;
+}
+
+.link-input-group input:focus {
+    outline: none;
+    border-color: var(--teal-accent);
+}
+
+.link-input-group input::placeholder {
+    color: var(--gray-400);
+}
+
+.link-modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 16px 20px;
+    border-top: 1px solid var(--gray-200);
+    background: var(--gray-50);
+}
+
+.link-cancel-btn {
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--gray-700);
+    border-radius: var(--radius-sm);
+    transition: background 0.15s;
+}
+
+.link-cancel-btn:hover {
+    background: var(--gray-200);
+}
+
+.link-insert-btn {
+    padding: 8px 20px;
+    font-size: 14px;
+    font-weight: 500;
+    background: var(--navy-primary);
+    color: var(--white);
+    border-radius: var(--radius-sm);
+    transition: background 0.15s;
+}
+
+.link-insert-btn:hover {
+    background: var(--navy-dark);
+}
+
+.link-insert-btn:disabled {
+    background: var(--gray-300);
+    cursor: not-allowed;
+}
