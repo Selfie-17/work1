@@ -1,9 +1,9 @@
+import { useRef, useCallback, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import rehypeHighlight from 'rehype-highlight';
-import rehypeRaw from 'rehype-raw';
 import { Eye } from 'lucide-react';
 import './Editor.css';
 
@@ -37,13 +37,28 @@ function transformImageUrl(src) {
     return src;
 }
 
-// Custom components for rendering
-const components = {
-    // Simple, robust image component
-    img: ({ node, src, alt, ...props }) => {
-        const transformedSrc = transformImageUrl(src);
+// Image component with proper error handling
+function ImageComponent({ src, alt, ...props }) {
+    const [hasError, setHasError] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const transformedSrc = transformImageUrl(src);
 
+    if (hasError) {
         return (
+            <div className="image-error-fallback">
+                <span>⚠️ Failed to load image</span>
+                <a href={src} target="_blank" rel="noopener noreferrer">Open original link</a>
+            </div>
+        );
+    }
+
+    return (
+        <>
+            {isLoading && (
+                <div className="image-loading-inline">
+                    Loading image...
+                </div>
+            )}
             <img
                 src={transformedSrc}
                 alt={alt || 'Image'}
@@ -54,23 +69,25 @@ const components = {
                     height: 'auto',
                     borderRadius: '8px',
                     margin: '16px 0',
-                    display: 'block',
+                    display: isLoading ? 'none' : 'block',
                     boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)'
                 }}
-                onError={(e) => {
-                    // Show error state
-                    e.target.style.display = 'none';
-                    const errorDiv = document.createElement('div');
-                    errorDiv.className = 'image-error-fallback';
-                    errorDiv.innerHTML = `
-                        <span>⚠️ Failed to load image</span>
-                        <a href="${src}" target="_blank" rel="noopener noreferrer">Open original link</a>
-                    `;
-                    e.target.parentNode.insertBefore(errorDiv, e.target.nextSibling);
+                onLoad={() => setIsLoading(false)}
+                onError={() => {
+                    setIsLoading(false);
+                    setHasError(true);
                 }}
                 {...props}
             />
-        );
+        </>
+    );
+}
+
+// Custom components for rendering
+const components = {
+    // Use the stateful image component
+    img: ({ node, src, alt, ...props }) => {
+        return <ImageComponent src={src} alt={alt} {...props} />;
     },
     // Custom checkbox for task lists
     input: ({ node, type, checked, ...props }) => {
@@ -98,10 +115,43 @@ const components = {
                 {children}
             </a>
         );
+    },
+    // Handle underline with custom component instead of rehypeRaw
+    u: ({ node, children, ...props }) => {
+        return <u {...props}>{children}</u>;
     }
 };
 
-export default function MarkdownPreview({ content, className }) {
+// Pre-process content to convert <u> tags to a format that works without rehypeRaw
+function preprocessContent(content) {
+    // Convert <u>text</u> to custom format that ReactMarkdown can handle
+    // We'll use a special marker that we convert back in components
+    return content
+        .replace(/<u>/gi, '++')
+        .replace(/<\/u>/gi, '++');
+}
+
+export default function MarkdownPreview({ content, className, previewRef, previewContentRef, editorRef, scrollSync }) {
+    const isScrollingRef = useRef(false);
+
+    // Handle scroll sync from preview to editor
+    const handleScroll = useCallback((e) => {
+        if (scrollSync && editorRef?.current && !isScrollingRef.current) {
+            isScrollingRef.current = true;
+            const preview = e.target;
+            const editor = editorRef.current;
+
+            const scrollPercentage = preview.scrollTop / (preview.scrollHeight - preview.clientHeight);
+            const editorScrollTop = scrollPercentage * (editor.scrollHeight - editor.clientHeight);
+
+            editor.scrollTop = editorScrollTop || 0;
+
+            setTimeout(() => {
+                isScrollingRef.current = false;
+            }, 50);
+        }
+    }, [editorRef, scrollSync]);
+
     return (
         <div className={`preview-pane ${className}`}>
             <div className="preview-header">
@@ -110,11 +160,15 @@ export default function MarkdownPreview({ content, className }) {
                     Preview
                 </div>
             </div>
-            <div className="preview-content">
-                <div className="markdown-body">
+            <div
+                className="preview-content"
+                ref={previewRef}
+                onScroll={handleScroll}
+            >
+                <div className="markdown-body" ref={previewContentRef}>
                     <ReactMarkdown
                         remarkPlugins={[remarkGfm, remarkMath]}
-                        rehypePlugins={[rehypeKatex, rehypeHighlight, rehypeRaw]}
+                        rehypePlugins={[rehypeKatex, rehypeHighlight]}
                         components={components}
                     >
                         {content}

@@ -5,6 +5,7 @@ import MarkdownPreview from './components/MarkdownPreview';
 import ShortcutsModal from './components/ShortcutsModal';
 import { handleKeyboardShortcut } from './utils/markdownShortcuts';
 import { createNewFile, openFile, saveFile } from './utils/fileOperations';
+import { downloadMarkdown, downloadPDF, printPreview } from './utils/downloadUtils';
 import { Check, AlertCircle } from 'lucide-react';
 import './App.css';
 
@@ -86,8 +87,11 @@ function App() {
   const [fileName, setFileName] = useState('Welcome.md');
   const [fileHandle, setFileHandle] = useState(null);
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [scrollSync, setScrollSync] = useState(true);
   const [toast, setToast] = useState(null);
   const editorRef = useRef(null);
+  const previewRef = useRef(null);
+  const previewContentRef = useRef(null);
   const isUndoRedo = useRef(false);
 
   // Show toast notification
@@ -193,6 +197,30 @@ function App() {
     });
   }, []);
 
+  // Download handlers
+  const handleDownloadMD = useCallback(() => {
+    downloadMarkdown(content, fileName);
+    showToast('Markdown file downloaded');
+  }, [content, fileName, showToast]);
+
+  const handleDownloadPDF = useCallback(() => {
+    const previewElement = previewContentRef.current;
+    if (previewElement) {
+      downloadPDF(previewElement, fileName);
+    } else {
+      showToast('Please switch to Split or Preview mode first', 'error');
+    }
+  }, [fileName, showToast]);
+
+  const handlePrint = useCallback(() => {
+    const previewElement = previewContentRef.current;
+    if (previewElement) {
+      printPreview(previewElement);
+    } else {
+      showToast('Please switch to Split or Preview mode first', 'error');
+    }
+  }, [showToast]);
+
   // Handle keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -242,9 +270,14 @@ function App() {
       <Navbar
         viewMode={viewMode}
         onViewModeChange={setViewMode}
+        scrollSync={scrollSync}
+        onScrollSyncChange={setScrollSync}
         onNewFile={handleNewFile}
         onOpenFile={handleOpenFile}
         onSaveFile={handleSaveFile}
+        onDownloadMD={handleDownloadMD}
+        onDownloadPDF={handleDownloadPDF}
+        onPrint={handlePrint}
         onShowShortcuts={() => setShowShortcuts(true)}
       />
 
@@ -255,6 +288,8 @@ function App() {
             onChange={handleContentChange}
             className={getEditorClass()}
             editorRef={editorRef}
+            previewRef={previewRef}
+            scrollSync={scrollSync && viewMode === VIEW_MODES.SPLIT}
             history={history}
             historyIndex={historyIndex}
             onUndo={handleUndo}
@@ -263,6 +298,10 @@ function App() {
           <MarkdownPreview
             content={content}
             className={getPreviewClass()}
+            previewRef={previewRef}
+            previewContentRef={previewContentRef}
+            editorRef={editorRef}
+            scrollSync={scrollSync && viewMode === VIEW_MODES.SPLIT}
           />
         </div>
       </main>

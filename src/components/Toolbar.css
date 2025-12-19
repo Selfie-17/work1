@@ -128,3 +128,14 @@
     color: var(--text-muted);
     font-family: var(--font-mono);
 }
+
+/* Override tooltip position for toolbar buttons - show below instead of above */
+.toolbar .toolbar-btn[data-tooltip]::after {
+    bottom: auto;
+    top: calc(100% + 8px);
+}
+
+.toolbar .heading-dropdown-btn[data-tooltip]::after {
+    bottom: auto;
+    top: calc(100% + 8px);
+}

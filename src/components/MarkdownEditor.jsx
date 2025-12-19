@@ -7,6 +7,8 @@ export default function MarkdownEditor({
     onChange,
     className,
     editorRef: externalRef,
+    previewRef,
+    scrollSync,
     history,
     historyIndex,
     onUndo,
@@ -16,6 +18,7 @@ export default function MarkdownEditor({
     const textareaRef = externalRef || internalRef;
     const lineNumbersRef = useRef(null);
     const [lineCount, setLineCount] = useState(1);
+    const isScrollingRef = useRef(false);
 
     // Update line numbers when content changes
     useEffect(() => {
@@ -23,12 +26,28 @@ export default function MarkdownEditor({
         setLineCount(lines);
     }, [content]);
 
-    // Sync scroll between textarea and line numbers
+    // Sync scroll between textarea, line numbers, and preview
     const handleScroll = useCallback(() => {
         if (lineNumbersRef.current && textareaRef.current) {
             lineNumbersRef.current.scrollTop = textareaRef.current.scrollTop;
         }
-    }, [textareaRef]);
+
+        // Sync with preview pane if scrollSync is enabled
+        if (scrollSync && previewRef?.current && textareaRef.current && !isScrollingRef.current) {
+            isScrollingRef.current = true;
+            const textarea = textareaRef.current;
+            const preview = previewRef.current;
+
+            const scrollPercentage = textarea.scrollTop / (textarea.scrollHeight - textarea.clientHeight);
+            const previewScrollTop = scrollPercentage * (preview.scrollHeight - preview.clientHeight);
+
+            preview.scrollTop = previewScrollTop || 0;
+
+            setTimeout(() => {
+                isScrollingRef.current = false;
+            }, 50);
+        }
+    }, [textareaRef, previewRef, scrollSync]);
 
     // Handle toolbar insertions
     const handleInsert = useCallback((action) => {
@@ -70,6 +89,27 @@ export default function MarkdownEditor({
                     newCursorPos + action.placeholder.length
                 );
             }
+        }, 0);
+    }, [content, onChange, textareaRef]);
+
+    // Handle raw markdown insertion (for modals)
+    const handleInsertRaw = useCallback((markdown) => {
+        const textarea = textareaRef.current;
+        if (!textarea) return;
+
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const textBefore = content.substring(0, start);
+        const textAfter = content.substring(end);
+
+        const newContent = textBefore + markdown + textAfter;
+        onChange(newContent);
+
+        // Set cursor after inserted text
+        setTimeout(() => {
+            textarea.focus();
+            const newPos = start + markdown.length;
+            textarea.setSelectionRange(newPos, newPos);
         }, 0);
     }, [content, onChange, textareaRef]);
 
@@ -121,6 +161,7 @@ export default function MarkdownEditor({
             <div className="editor-wrapper">
                 <Toolbar
                     onInsert={handleInsert}
+                    onInsertRaw={handleInsertRaw}
                     onUndo={onUndo}
                     onRedo={onRedo}
                     onCopy={handleCopy}

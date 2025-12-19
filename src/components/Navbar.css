@@ -124,3 +124,118 @@
     color: var(--text-secondary);
     border: 1px solid var(--border-color);
 }
+
+/* Scroll Sync Button */
+.scroll-sync-btn {
+    position: relative;
+    gap: 6px;
+}
+
+.scroll-sync-btn.active {
+    background: rgba(99, 102, 241, 0.2);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+}
+
+.scroll-sync-btn.active svg {
+    animation: spin-slow 2s linear infinite;
+}
+
+@keyframes spin-slow {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Download Dropdown */
+.download-dropdown {
+    position: relative;
+}
+
+.download-btn {
+    gap: 6px;
+}
+
+.download-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    min-width: 220px;
+    padding: 8px;
+    background: var(--bg-secondary);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    z-index: 200;
+    /* Hidden by default */
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 150ms ease;
+}
+
+/* Show menu on hover */
+.download-dropdown:hover .download-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+@keyframes dropdownSlide {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.download-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 10px 12px;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    text-align: left;
+}
+
+.download-option:hover {
+    background: var(--glass-hover);
+    color: var(--text-primary);
+}
+
+.download-option svg {
+    flex-shrink: 0;
+    color: var(--accent-primary);
+}
+
+.download-option-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.download-option-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.download-option-desc {
+    font-size: 11px;
+    color: var(--text-muted);
+}
