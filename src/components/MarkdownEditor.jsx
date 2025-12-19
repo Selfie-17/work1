@@ -1,5 +1,4 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
-import Toolbar from './Toolbar';
 import './Editor.css';
 
 export default function MarkdownEditor({
@@ -12,7 +11,9 @@ export default function MarkdownEditor({
     history,
     historyIndex,
     onUndo,
-    onRedo
+    onRedo,
+    onInsertAction,
+    onInsertRawAction
 }) {
     const internalRef = useRef(null);
     const textareaRef = externalRef || internalRef;
@@ -156,17 +157,19 @@ export default function MarkdownEditor({
         }
     }, [content, onChange, textareaRef]);
 
+    // Expose handlers to parent via callback props
+    useEffect(() => {
+        if (onInsertAction) {
+            onInsertAction.current = handleInsert;
+        }
+        if (onInsertRawAction) {
+            onInsertRawAction.current = handleInsertRaw;
+        }
+    }, [handleInsert, handleInsertRaw, onInsertAction, onInsertRawAction]);
+
     return (
         <div className={`editor-pane ${className}`}>
             <div className="editor-wrapper">
-                <Toolbar
-                    onInsert={handleInsert}
-                    onInsertRaw={handleInsertRaw}
-                    onUndo={onUndo}
-                    onRedo={onRedo}
-                    onCopy={handleCopy}
-                    onPaste={handlePaste}
-                />
                 <div className="editor-textarea-wrapper">
                     <div className="line-numbers" ref={lineNumbersRef}>
                         {Array.from({ length: lineCount }, (_, i) => (
@@ -189,3 +192,4 @@ export default function MarkdownEditor({
         </div>
     );
 }
+

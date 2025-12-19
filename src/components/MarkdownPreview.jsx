@@ -4,7 +4,6 @@ import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import rehypeHighlight from 'rehype-highlight';
-import { Eye } from 'lucide-react';
 import './Editor.css';
 
 // Transform image URLs to direct embeddable URLs
@@ -155,12 +154,6 @@ export default function MarkdownPreview({ content, className, previewRef, previe
 
     return (
         <div className={`preview-pane ${className}`}>
-            <div className="preview-header">
-                <div className="preview-title">
-                    <Eye size={16} />
-                    Preview
-                </div>
-            </div>
             <div
                 className="preview-content"
                 ref={previewRef}

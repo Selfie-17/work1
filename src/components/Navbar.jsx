@@ -1,4 +1,4 @@
-import { FileText, FilePlus, FolderOpen, Download, Keyboard, RefreshCw, Printer, FileDown, ChevronDown } from 'lucide-react';
+import { FileText, FilePlus, FolderOpen, Download, Keyboard, Printer, FileDown, ChevronDown } from 'lucide-react';
 import './Navbar.css';
 
 const VIEW_MODES = {
@@ -115,16 +115,15 @@ export default function Navbar({
 
         {/* Scroll Sync Toggle */}
         {viewMode === VIEW_MODES.SPLIT && (
-          <>
-            <button
-              className={`btn btn-glass scroll-sync-btn ${scrollSync ? 'active' : ''}`}
-              onClick={() => onScrollSyncChange(!scrollSync)}
-              data-tooltip={scrollSync ? 'Scroll Sync: ON' : 'Scroll Sync: OFF'}
-            >
-              <RefreshCw size={16} />
-              Sync
-            </button>
-          </>
+          <label className="sync-toggle" data-tooltip={scrollSync ? 'Scroll Sync: ON' : 'Scroll Sync: OFF'}>
+            <input
+              type="checkbox"
+              checked={scrollSync}
+              onChange={(e) => onScrollSyncChange(e.target.checked)}
+            />
+            <span className="sync-toggle-slider"></span>
+            <span className="sync-toggle-label">Sync</span>
+          </label>
         )}
 
         <div className="divider"></div>

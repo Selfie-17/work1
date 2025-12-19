@@ -81,147 +81,7 @@ export default function Toolbar({ onInsert, onInsertRaw, onUndo, onRedo, onCopy,
     return (
         <>
             <div className="toolbar">
-                {/* Code */}
-                <div className="toolbar-group">
-                    <button
-                        className="toolbar-btn"
-                        onClick={() => handleAction('code')}
-                        data-tooltip="Inline Code"
-                    >
-                        <Code size={16} />
-                    </button>
-                    <button
-                        className="toolbar-btn"
-                        onClick={() => handleAction('codeBlock')}
-                        data-tooltip="Code Block (Ctrl+`)"
-                    >
-                        <FileCode size={16} />
-                    </button>
-                </div>
-
-                {/* Links & Media */}
-                <div className="toolbar-group">
-                    <button
-                        className="toolbar-btn"
-                        onClick={() => setShowLinkModal(true)}
-                        data-tooltip="Insert Link (Ctrl+K)"
-                    >
-                        <Link size={16} />
-                    </button>
-                    <button
-                        className="toolbar-btn"
-                        onClick={() => setShowImageModal(true)}
-                        data-tooltip="Insert Image (Ctrl+Shift+K)"
-                    >
-                        <Image size={16} />
-                    </button>
-                </div>
-
-                {/* Lists */}
-                <div className="toolbar-group">
-                    <button
-                        className="toolbar-btn"
-                        onClick={() => handleAction('unorderedList')}
-                        data-tooltip="Bullet List"
-                    >
-                        <List size={16} />
-                    </button>
-                    <button
-                        className="toolbar-btn"
-                        onClick={() => handleAction('orderedList')}
-                        data-tooltip="Numbered List"
-                    >
-                        <ListOrdered size={16} />
-                    </button>
-                    <button
-                        className="toolbar-btn"
-                        onClick={() => handleAction('taskList')}
-                        data-tooltip="Task List"
-                    >
-                        <CheckSquare size={16} />
-                    </button>
-                </div>
-
-                {/* Blocks */}
-                <div className="toolbar-group">
-                    <button
-                        className="toolbar-btn"
-                        onClick={() => handleAction('quote')}
-                        data-tooltip="Quote"
-                    >
-                        <Quote size={16} />
-                    </button>
-                    <button
-                        className="toolbar-btn"
-                        onClick={() => handleAction('table')}
-                        data-tooltip="Table"
-                    >
-                        <Table size={16} />
-                    </button>
-                    <button
-                        className="toolbar-btn"
-                        onClick={() => handleAction('hr')}
-                        data-tooltip="Horizontal Rule"
-                    >
-                        <Minus size={16} />
-                    </button>
-                </div>
-
-                {/* Math */}
-                <div className="toolbar-group">
-                    <button
-                        className="toolbar-btn"
-                        onClick={() => handleAction('inlineMath')}
-                        data-tooltip="Inline Math"
-                    >
-                        <Sigma size={16} />
-                    </button>
-                    <button
-                        className="toolbar-btn"
-                        onClick={() => handleAction('blockMath')}
-                        data-tooltip="Block Math"
-                    >
-                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '14px' }}>∑</span>
-                    </button>
-                </div>
-
-                {/* Undo/Redo - Moved to end */}
-                <div className="toolbar-group">
-                    <button
-                        className="toolbar-btn"
-                        onClick={onUndo}
-                        data-tooltip="Undo (Ctrl+Z)"
-                    >
-                        <Undo2 size={16} />
-                    </button>
-                    <button
-                        className="toolbar-btn"
-                        onClick={onRedo}
-                        data-tooltip="Redo (Ctrl+Y)"
-                    >
-                        <Redo2 size={16} />
-                    </button>
-                </div>
-
-                {/* Copy/Paste - Moved to end */}
-                <div className="toolbar-group">
-                    <button
-                        className="toolbar-btn"
-                        onClick={onCopy}
-                        data-tooltip="Copy (Ctrl+C)"
-                    >
-                        <Copy size={16} />
-                    </button>
-                    <button
-                        className="toolbar-btn"
-                        onClick={onPaste}
-                        data-tooltip="Paste (Ctrl+V)"
-                    >
-                        <Clipboard size={16} />
-                    </button>
-                </div>
-
-                {/* Headings Dropdown - Moved to end */}
+                {/* 1. Headings Dropdown */}
                 <div className="toolbar-group">
                     <div className="heading-dropdown">
                         <button className="heading-dropdown-btn">
@@ -242,7 +102,7 @@ export default function Toolbar({ onInsert, onInsertRaw, onUndo, onRedo, onCopy,
                     </div>
                 </div>
 
-                {/* Text Formatting - Moved to end */}
+                {/* 2. Text Formatting */}
                 <div className="toolbar-group">
                     <button
                         className="toolbar-btn"
@@ -271,6 +131,146 @@ export default function Toolbar({ onInsert, onInsertRaw, onUndo, onRedo, onCopy,
                         data-tooltip="Strikethrough"
                     >
                         <Strikethrough size={16} />
+                    </button>
+                </div>
+
+                {/* 3. Lists */}
+                <div className="toolbar-group">
+                    <button
+                        className="toolbar-btn"
+                        onClick={() => handleAction('unorderedList')}
+                        data-tooltip="Bullet List"
+                    >
+                        <List size={16} />
+                    </button>
+                    <button
+                        className="toolbar-btn"
+                        onClick={() => handleAction('orderedList')}
+                        data-tooltip="Numbered List"
+                    >
+                        <ListOrdered size={16} />
+                    </button>
+                    <button
+                        className="toolbar-btn"
+                        onClick={() => handleAction('taskList')}
+                        data-tooltip="Task List"
+                    >
+                        <CheckSquare size={16} />
+                    </button>
+                </div>
+
+                {/* 4. Links & Media */}
+                <div className="toolbar-group">
+                    <button
+                        className="toolbar-btn"
+                        onClick={() => setShowLinkModal(true)}
+                        data-tooltip="Insert Link (Ctrl+K)"
+                    >
+                        <Link size={16} />
+                    </button>
+                    <button
+                        className="toolbar-btn"
+                        onClick={() => setShowImageModal(true)}
+                        data-tooltip="Insert Image (Ctrl+Shift+K)"
+                    >
+                        <Image size={16} />
+                    </button>
+                </div>
+
+                {/* 5. Code */}
+                <div className="toolbar-group">
+                    <button
+                        className="toolbar-btn"
+                        onClick={() => handleAction('code')}
+                        data-tooltip="Inline Code"
+                    >
+                        <Code size={16} />
+                    </button>
+                    <button
+                        className="toolbar-btn"
+                        onClick={() => handleAction('codeBlock')}
+                        data-tooltip="Code Block (Ctrl+`)"
+                    >
+                        <FileCode size={16} />
+                    </button>
+                </div>
+
+                {/* 6. Blocks */}
+                <div className="toolbar-group">
+                    <button
+                        className="toolbar-btn"
+                        onClick={() => handleAction('quote')}
+                        data-tooltip="Quote"
+                    >
+                        <Quote size={16} />
+                    </button>
+                    <button
+                        className="toolbar-btn"
+                        onClick={() => handleAction('table')}
+                        data-tooltip="Table"
+                    >
+                        <Table size={16} />
+                    </button>
+                    <button
+                        className="toolbar-btn"
+                        onClick={() => handleAction('hr')}
+                        data-tooltip="Horizontal Rule"
+                    >
+                        <Minus size={16} />
+                    </button>
+                </div>
+
+                {/* 7. Math */}
+                <div className="toolbar-group">
+                    <button
+                        className="toolbar-btn"
+                        onClick={() => handleAction('inlineMath')}
+                        data-tooltip="Inline Math"
+                    >
+                        <Sigma size={16} />
+                    </button>
+                    <button
+                        className="toolbar-btn"
+                        onClick={() => handleAction('blockMath')}
+                        data-tooltip="Block Math"
+                    >
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '14px' }}>∑</span>
+                    </button>
+                </div>
+
+                {/* 8. Undo/Redo */}
+                <div className="toolbar-group">
+                    <button
+                        className="toolbar-btn"
+                        onClick={onUndo}
+                        data-tooltip="Undo (Ctrl+Z)"
+                    >
+                        <Undo2 size={16} />
+                    </button>
+                    <button
+                        className="toolbar-btn"
+                        onClick={onRedo}
+                        data-tooltip="Redo (Ctrl+Y)"
+                    >
+                        <Redo2 size={16} />
+                    </button>
+                </div>
+
+                {/* 9. Copy/Paste */}
+                <div className="toolbar-group">
+                    <button
+                        className="toolbar-btn"
+                        onClick={onCopy}
+                        data-tooltip="Copy (Ctrl+C)"
+                    >
+                        <Copy size={16} />
+                    </button>
+                    <button
+                        className="toolbar-btn"
+                        onClick={onPaste}
+                        data-tooltip="Paste (Ctrl+V)"
+                    >
+                        <Clipboard size={16} />
                     </button>
                 </div>
             </div>

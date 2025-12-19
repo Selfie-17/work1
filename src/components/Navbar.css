@@ -125,30 +125,67 @@
     border: 1px solid var(--border-color);
 }
 
-/* Scroll Sync Button */
-.scroll-sync-btn {
-    position: relative;
-    gap: 6px;
+/* Sync Toggle Switch */
+.sync-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all var(--transition-fast);
 }
 
-.scroll-sync-btn.active {
-    background: rgba(99, 102, 241, 0.2);
+.sync-toggle:hover {
+    background: var(--glass-hover);
     border-color: var(--accent-primary);
+}
+
+.sync-toggle input[type="checkbox"] {
+    display: none;
+}
+
+.sync-toggle-slider {
+    position: relative;
+    width: 36px;
+    height: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    transition: all var(--transition-fast);
+}
+
+.sync-toggle-slider::before {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    background: var(--text-muted);
+    border-radius: 50%;
+    transition: all var(--transition-fast);
+}
+
+.sync-toggle input[type="checkbox"]:checked+.sync-toggle-slider {
+    background: var(--accent-primary);
+}
+
+.sync-toggle input[type="checkbox"]:checked+.sync-toggle-slider::before {
+    transform: translateX(16px);
+    background: white;
+}
+
+.sync-toggle-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    transition: all var(--transition-fast);
+}
+
+.sync-toggle input[type="checkbox"]:checked~.sync-toggle-label {
     color: var(--accent-primary);
-}
-
-.scroll-sync-btn.active svg {
-    animation: spin-slow 2s linear infinite;
-}
-
-@keyframes spin-slow {
-    from {
-        transform: rotate(0deg);
-    }
-
-    to {
-        transform: rotate(360deg);
-    }
 }
 
 /* Download Dropdown */

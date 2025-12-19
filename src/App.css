@@ -9,7 +9,7 @@
 .main-content {
   display: flex;
   flex: 1;
-  margin-top: var(--navbar-height);
+  margin-top: calc(var(--navbar-height) + var(--toolbar-height));
   overflow: hidden;
 }
 

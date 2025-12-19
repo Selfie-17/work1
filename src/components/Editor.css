@@ -108,8 +108,9 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px 16px;
-    background: var(--glass-bg);
+    padding: 6px 16px;
+    background: linear-gradient(180deg, rgba(26, 26, 46, 0.95) 0%, rgba(22, 33, 62, 0.85) 100%);
+    backdrop-filter: blur(10px);
     border-bottom: 1px solid var(--glass-border);
 }
 
@@ -117,7 +118,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     color: var(--text-secondary);
     text-transform: uppercase;

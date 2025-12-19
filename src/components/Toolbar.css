@@ -1,22 +1,35 @@
 .toolbar {
+    position: fixed;
+    top: var(--navbar-height);
+    left: 0;
+    right: 0;
+    height: var(--toolbar-height);
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 16px;
-    background: linear-gradient(180deg, rgba(26, 26, 46, 0.9) 0%, rgba(22, 33, 62, 0.7) 100%);
+    gap: 12px;
+    padding: 0 20px;
+    background: linear-gradient(180deg, rgba(26, 26, 46, 0.95) 0%, rgba(22, 33, 62, 0.85) 100%);
     backdrop-filter: blur(10px);
     border-bottom: 1px solid var(--glass-border);
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    z-index: 90;
+}
+
+/* Hide scrollbar but allow scrolling */
+.toolbar::-webkit-scrollbar {
+    height: 0;
 }
 
 .toolbar-group {
     display: flex;
     align-items: center;
-    gap: 2px;
-    padding: 4px;
+    gap: 4px;
+    padding: 4px 6px;
     background: var(--glass-bg);
     border-radius: 8px;
     border: 1px solid var(--glass-border);
+    flex-shrink: 0;
 }
 
 .toolbar-btn {
@@ -53,6 +66,7 @@
     height: 24px;
     background: var(--border-color);
     margin: 0 4px;
+    flex-shrink: 0;
 }
 
 .heading-dropdown {
@@ -63,13 +77,13 @@
     display: flex;
     align-items: center;
     gap: 4px;
-    padding: 4px 10px;
+    padding: 6px 12px;
     background: transparent;
     border: none;
     border-radius: 6px;
     color: var(--text-secondary);
-    font-size: 13px;
-    font-weight: 500;
+    font-size: 14px;
+    font-weight: 600;
     cursor: pointer;
     transition: all var(--transition-fast);
 }

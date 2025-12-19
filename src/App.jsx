@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Navbar, { VIEW_MODES } from './components/Navbar';
+import Toolbar from './components/Toolbar';
 import MarkdownEditor from './components/MarkdownEditor';
 import MarkdownPreview from './components/MarkdownPreview';
 import ShortcutsModal from './components/ShortcutsModal';
@@ -93,6 +94,55 @@ function App() {
   const previewRef = useRef(null);
   const previewContentRef = useRef(null);
   const isUndoRedo = useRef(false);
+  const insertActionRef = useRef(null);
+  const insertRawActionRef = useRef(null);
+
+  // Toolbar handlers
+  const handleToolbarInsert = useCallback((action) => {
+    if (insertActionRef.current) {
+      insertActionRef.current(action);
+    }
+  }, []);
+
+  const handleToolbarInsertRaw = useCallback((markdown) => {
+    if (insertRawActionRef.current) {
+      insertRawActionRef.current(markdown);
+    }
+  }, []);
+
+  const handleCopy = useCallback(async () => {
+    const textarea = editorRef.current;
+    if (!textarea) return;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = content.substring(start, end);
+    if (selectedText) {
+      await navigator.clipboard.writeText(selectedText);
+    } else {
+      await navigator.clipboard.writeText(content);
+    }
+  }, [content]);
+
+  const handlePaste = useCallback(async () => {
+    const textarea = editorRef.current;
+    if (!textarea) return;
+    try {
+      const clipboardText = await navigator.clipboard.readText();
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const textBefore = content.substring(0, start);
+      const textAfter = content.substring(end);
+      const newContent = textBefore + clipboardText + textAfter;
+      setContent(newContent);
+      setTimeout(() => {
+        textarea.focus();
+        const newPos = start + clipboardText.length;
+        textarea.setSelectionRange(newPos, newPos);
+      }, 0);
+    } catch (err) {
+      console.error('Failed to paste:', err);
+    }
+  }, [content]);
 
   // Show toast notification
   const showToast = useCallback((message, type = 'success') => {
@@ -281,6 +331,16 @@ function App() {
         onShowShortcuts={() => setShowShortcuts(true)}
       />
 
+      {/* Full-width Toolbar */}
+      <Toolbar
+        onInsert={handleToolbarInsert}
+        onInsertRaw={handleToolbarInsertRaw}
+        onUndo={handleUndo}
+        onRedo={handleRedo}
+        onCopy={handleCopy}
+        onPaste={handlePaste}
+      />
+
       <main className="main-content">
         <div className="editor-container">
           <MarkdownEditor
@@ -294,6 +354,8 @@ function App() {
             historyIndex={historyIndex}
             onUndo={handleUndo}
             onRedo={handleRedo}
+            onInsertAction={insertActionRef}
+            onInsertRawAction={insertRawActionRef}
           />
           <MarkdownPreview
             content={content}
