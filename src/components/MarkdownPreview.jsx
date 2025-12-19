@@ -1,4 +1,4 @@
-import { useRef, useCallback, useState } from 'react';
+import { useRef, useCallback, useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -39,11 +39,15 @@ function transformImageUrl(src) {
 
 // Image component with proper error handling
 function ImageComponent({ src, alt, ...props }) {
-    const [hasError, setHasError] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
+    const [status, setStatus] = useState('loading'); // 'loading' | 'loaded' | 'error'
     const transformedSrc = transformImageUrl(src);
 
-    if (hasError) {
+    // Reset status when src changes
+    useEffect(() => {
+        setStatus('loading');
+    }, [src]);
+
+    if (status === 'error') {
         return (
             <div className="image-error-fallback">
                 <span>⚠️ Failed to load image</span>
@@ -53,33 +57,30 @@ function ImageComponent({ src, alt, ...props }) {
     }
 
     return (
-        <>
-            {isLoading && (
+        <div className="image-container">
+            {status === 'loading' && (
                 <div className="image-loading-inline">
                     Loading image...
                 </div>
             )}
             <img
+                key={transformedSrc}
                 src={transformedSrc}
                 alt={alt || 'Image'}
-                loading="lazy"
                 referrerPolicy="no-referrer"
                 style={{
                     maxWidth: '100%',
                     height: 'auto',
                     borderRadius: '8px',
                     margin: '16px 0',
-                    display: isLoading ? 'none' : 'block',
+                    display: status === 'loaded' ? 'block' : 'none',
                     boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)'
                 }}
-                onLoad={() => setIsLoading(false)}
-                onError={() => {
-                    setIsLoading(false);
-                    setHasError(true);
-                }}
+                onLoad={() => setStatus('loaded')}
+                onError={() => setStatus('error')}
                 {...props}
             />
-        </>
+        </div>
     );
 }
 
