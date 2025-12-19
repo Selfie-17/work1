@@ -20,11 +20,25 @@ export default function RichTextEditor() {
         updateActiveFormats();
     }, []);
 
+    // Check if selection has highlight
+    const checkHighlight = () => {
+        const selection = window.getSelection();
+        if (selection.rangeCount > 0) {
+            const parent = selection.anchorNode?.parentElement;
+            if (parent) {
+                const bgColor = window.getComputedStyle(parent).backgroundColor;
+                return bgColor === 'rgb(255, 255, 0)' || bgColor === 'yellow';
+            }
+        }
+        return false;
+    };
+
     const updateActiveFormats = () => {
         setActiveFormats({
             bold: document.queryCommandState('bold'),
             italic: document.queryCommandState('italic'),
             underline: document.queryCommandState('underline'),
+            highlight: checkHighlight(),
         });
     };
 
@@ -144,7 +158,41 @@ export default function RichTextEditor() {
                     <div className="toolbar-group">
                         <ToolbarButton
                             icon={Highlighter}
-                            onClick={() => execCommand('hiliteColor', 'yellow')}
+                            onClick={() => {
+                                // Toggle highlight: use backColor for better browser support
+                                const selection = window.getSelection();
+                                if (selection.rangeCount > 0 && selection.toString().length > 0) {
+                                    const range = selection.getRangeAt(0);
+                                    const parent = range.commonAncestorContainer.parentElement;
+
+                                    // Check if already highlighted
+                                    const bgColor = parent?.style?.backgroundColor ||
+                                        window.getComputedStyle(parent).backgroundColor;
+                                    const isHighlighted = bgColor === 'yellow' ||
+                                        bgColor === 'rgb(255, 255, 0)' ||
+                                        bgColor.includes('255, 255, 0');
+
+                                    if (isHighlighted) {
+                                        // Remove highlight by setting to transparent/inherit
+                                        document.execCommand('backColor', false, 'rgba(0,0,0,0)');
+                                    } else {
+                                        // Add highlight
+                                        document.execCommand('backColor', false, 'yellow');
+
+                                        // Move cursor to end of selection and collapse
+                                        // This prevents new typing from being highlighted
+                                        setTimeout(() => {
+                                            const sel = window.getSelection();
+                                            if (sel.rangeCount > 0) {
+                                                sel.collapseToEnd();
+                                            }
+                                        }, 0);
+                                    }
+                                    editorRef.current?.focus();
+                                    updateActiveFormats();
+                                }
+                            }}
+                            active={activeFormats.highlight}
                             title="Highlight"
                         />
                         <ToolbarButton
