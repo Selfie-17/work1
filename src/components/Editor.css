@@ -1,0 +1,448 @@
+.editor-container {
+    display: flex;
+    flex: 1;
+    height: 100%;
+    overflow: hidden;
+}
+
+.editor-pane {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    overflow: hidden;
+}
+
+.editor-pane.hidden {
+    display: none;
+}
+
+.editor-pane.full {
+    flex: 1;
+}
+
+.editor-pane.split {
+    flex: 0 0 50%;
+}
+
+/* Editor Section */
+.editor-wrapper {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+    background: var(--bg-primary);
+}
+
+.editor-textarea-wrapper {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+.line-numbers {
+    display: flex;
+    flex-direction: column;
+    padding: 16px 0;
+    min-width: 50px;
+    background: rgba(0, 0, 0, 0.2);
+    border-right: 1px solid var(--border-color);
+    font-family: var(--font-mono);
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-muted);
+    text-align: right;
+    user-select: none;
+    overflow: hidden;
+}
+
+.line-number {
+    padding: 0 12px;
+}
+
+.editor-textarea {
+    flex: 1;
+    padding: 16px;
+    background: transparent;
+    border: none;
+    outline: none;
+    resize: none;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-primary);
+    overflow: auto;
+}
+
+.editor-textarea::placeholder {
+    color: var(--text-muted);
+}
+
+/* Preview Section */
+.preview-pane {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    overflow: hidden;
+    border-left: 1px solid var(--border-color);
+    background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+}
+
+.preview-pane.hidden {
+    display: none;
+}
+
+.preview-pane.full {
+    flex: 1;
+    border-left: none;
+}
+
+.preview-pane.split {
+    flex: 0 0 50%;
+}
+
+.preview-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--glass-bg);
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.preview-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.preview-title svg {
+    color: var(--accent-primary);
+}
+
+.preview-content {
+    flex: 1;
+    padding: 24px;
+    overflow: auto;
+}
+
+/* Markdown Styling - GitHub-like */
+.markdown-body {
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.7;
+    color: var(--text-primary);
+}
+
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4,
+.markdown-body h5,
+.markdown-body h6 {
+    margin-top: 24px;
+    margin-bottom: 16px;
+    font-weight: 600;
+    line-height: 1.25;
+}
+
+.markdown-body h1 {
+    font-size: 2em;
+    padding-bottom: 0.3em;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.markdown-body h2 {
+    font-size: 1.5em;
+    padding-bottom: 0.3em;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.markdown-body h3 {
+    font-size: 1.25em;
+}
+
+.markdown-body h4 {
+    font-size: 1em;
+}
+
+.markdown-body h5 {
+    font-size: 0.875em;
+}
+
+.markdown-body h6 {
+    font-size: 0.85em;
+    color: var(--text-muted);
+}
+
+.markdown-body p {
+    margin-top: 0;
+    margin-bottom: 16px;
+}
+
+.markdown-body a {
+    color: var(--accent-primary);
+    text-decoration: none;
+}
+
+.markdown-body a:hover {
+    text-decoration: underline;
+}
+
+.markdown-body strong {
+    font-weight: 600;
+}
+
+.markdown-body em {
+    font-style: italic;
+}
+
+.markdown-body del {
+    text-decoration: line-through;
+    color: var(--text-muted);
+}
+
+.markdown-body code {
+    padding: 0.2em 0.4em;
+    margin: 0;
+    font-size: 85%;
+    font-family: var(--font-mono);
+    background: rgba(99, 102, 241, 0.1);
+    border-radius: 4px;
+    color: var(--accent-secondary);
+}
+
+.markdown-body pre {
+    padding: 16px;
+    margin: 16px 0;
+    overflow: auto;
+    font-size: 85%;
+    line-height: 1.45;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.markdown-body pre code {
+    padding: 0;
+    margin: 0;
+    font-size: 100%;
+    background: transparent;
+    border-radius: 0;
+    color: var(--text-primary);
+}
+
+.markdown-body blockquote {
+    margin: 16px 0;
+    padding: 0 16px;
+    color: var(--text-secondary);
+    border-left: 4px solid var(--accent-primary);
+    background: rgba(99, 102, 241, 0.05);
+    border-radius: 0 8px 8px 0;
+}
+
+.markdown-body ul,
+.markdown-body ol {
+    margin-top: 0;
+    margin-bottom: 16px;
+    padding-left: 2em;
+}
+
+.markdown-body li {
+    margin-top: 4px;
+}
+
+.markdown-body li+li {
+    margin-top: 4px;
+}
+
+.markdown-body ul ul,
+.markdown-body ul ol,
+.markdown-body ol ol,
+.markdown-body ol ul {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+.markdown-body input[type="checkbox"] {
+    margin-right: 8px;
+    accent-color: var(--accent-primary);
+}
+
+.markdown-body hr {
+    height: 2px;
+    margin: 24px 0;
+    background: linear-gradient(90deg, transparent, var(--border-color), transparent);
+    border: none;
+}
+
+.markdown-body table {
+    width: 100%;
+    margin: 16px 0;
+    border-collapse: collapse;
+    border-spacing: 0;
+    overflow: auto;
+}
+
+.markdown-body table th,
+.markdown-body table td {
+    padding: 10px 16px;
+    border: 1px solid var(--border-color);
+}
+
+.markdown-body table th {
+    font-weight: 600;
+    background: rgba(99, 102, 241, 0.1);
+}
+
+.markdown-body table tr:nth-child(2n) {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.markdown-body img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    margin: 16px 0;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* KaTeX Math */
+.markdown-body .katex-display {
+    margin: 16px 0;
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    overflow-x: auto;
+}
+
+.markdown-body .katex {
+    font-size: 1.1em;
+}
+
+/* Resizer */
+.resizer {
+    width: 4px;
+    background: var(--border-color);
+    cursor: col-resize;
+    transition: background var(--transition-fast);
+}
+
+.resizer:hover {
+    background: var(--accent-primary);
+}
+
+/* Image Loading States - Inline versions */
+.image-loading-inline,
+.image-error-inline {
+    display: block;
+    padding: 16px 24px;
+    margin: 8px 0;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px dashed var(--border-color);
+    border-radius: 8px;
+    color: var(--text-muted);
+    font-size: 14px;
+}
+
+.image-loading-inline {
+    background: rgba(99, 102, 241, 0.05);
+    border-color: rgba(99, 102, 241, 0.2);
+}
+
+.image-error-inline {
+    background: rgba(239, 68, 68, 0.05);
+    border-color: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+}
+
+.image-error-inline a {
+    color: var(--accent-primary);
+    text-decoration: underline;
+    margin-left: 4px;
+}
+
+/* Image Error Fallback */
+.image-error-fallback {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 24px;
+    margin: 16px 0;
+    background: rgba(239, 68, 68, 0.05);
+    border: 1px dashed rgba(239, 68, 68, 0.3);
+    border-radius: 8px;
+    color: #f87171;
+    font-size: 14px;
+}
+
+.image-error-fallback a {
+    color: var(--accent-primary);
+    text-decoration: underline;
+    font-size: 12px;
+}
+
+/* Image Loading States */
+.image-container {
+    margin: 16px 0;
+}
+
+.image-loading,
+.image-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 32px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px dashed var(--border-color);
+    border-radius: 8px;
+    color: var(--text-muted);
+}
+
+.image-loading {
+    background: rgba(99, 102, 241, 0.05);
+    border-color: rgba(99, 102, 241, 0.2);
+}
+
+.image-error {
+    background: rgba(239, 68, 68, 0.05);
+    border-color: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+}
+
+.image-error .image-link {
+    font-size: 12px;
+    color: var(--accent-primary);
+    text-decoration: underline;
+}
+
+.spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Underline support */
+.markdown-body u {
+    text-decoration: underline;
+    text-decoration-color: var(--accent-primary);
+}
