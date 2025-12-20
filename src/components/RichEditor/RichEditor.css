@@ -1,0 +1,41 @@
+.rich-editor-container {
+    display: flex;
+    justify-content: center;
+    padding: 2rem;
+    background-color: var(--bg-main);
+    min-height: calc(100vh - 124px);
+    /* Subtract Navbar and Header heights */
+}
+
+.document-canvas {
+    width: 100%;
+    max-width: 850px;
+    background-color: var(--bg-white);
+    padding: 5rem;
+    box-shadow: var(--shadow);
+    border-radius: 0.125rem;
+    min-height: 1056px;
+    /* A4-ish height */
+}
+
+.editable-area {
+    outline: none;
+    font-size: 1rem;
+    color: #374151;
+}
+
+.editable-area h1 {
+    font-size: 2.25rem;
+    font-weight: 700;
+    margin-bottom: 2rem;
+}
+
+.editable-area p {
+    margin-bottom: 1rem;
+}
+
+.editable-area:empty:before {
+    content: attr(placeholder);
+    color: #9ca3af;
+    pointer-events: none;
+}
