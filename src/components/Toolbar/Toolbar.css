@@ -1,0 +1,242 @@
+.pro-toolbar-container {
+    display: flex;
+    flex-direction: column;
+    background-color: white;
+    border-bottom: 1px solid #e5e7eb;
+    position: sticky;
+    top: 52px;
+    z-index: 1000;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.toolbar-row {
+    display: flex;
+    align-items: center;
+    padding: 4px 12px;
+    gap: 4px;
+}
+
+.row-1 {
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.toolbar-group {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding-right: 6px;
+    margin-right: 4px;
+    border-right: 1px solid #f3f4f6;
+}
+
+.toolbar-group:last-child {
+    border-right: none;
+}
+
+.toolbar-spacer {
+    flex-grow: 1;
+}
+
+.toolbar-btn {
+    height: 32px;
+    min-width: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid transparent;
+    background: transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    color: #64748b;
+    transition: all 0.2s;
+    padding: 0 4px;
+}
+
+.toolbar-btn:hover {
+    background-color: #f1f5f9;
+    color: #0f172a;
+}
+
+.toolbar-btn.active {
+    background-color: #f1f5f9;
+    border-color: #e2e8f0;
+    color: #2563eb;
+}
+
+.toolbar-btn svg {
+    stroke-width: 2px;
+}
+
+.actions-group {
+    margin-left: auto;
+    gap: 4px;
+}
+
+@media print {
+
+    .pro-toolbar-container,
+    .navbar,
+    .document-header {
+        display: none !important;
+    }
+
+    .rich-editor-container {
+        padding: 0 !important;
+    }
+
+    .document-canvas {
+        box-shadow: none !important;
+        padding: 0 !important;
+    }
+}
+
+/* Color Picker */
+.color-picker-wrapper {
+    position: relative;
+}
+
+.color-btn {
+    gap: 2px;
+    padding-right: 4px;
+}
+
+.color-icon {
+    font-weight: 800;
+}
+
+.color-arrow {
+    font-size: 10px;
+    opacity: 0.6;
+}
+
+.color-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 4px;
+    padding: 8px;
+    z-index: 1100;
+}
+
+.color-swatch {
+    width: 20px;
+    height: 20px;
+    border-radius: 3px;
+    cursor: pointer;
+    border: 1px solid #f3f4f6;
+}
+
+.color-swatch:hover {
+    transform: scale(1.1);
+    border-color: #d1d5db;
+}
+
+/* Symbols */
+.symbols-dropdown {
+    grid-template-columns: repeat(6, 1fr);
+    width: 200px;
+}
+
+.symbol-item {
+    font-size: 16px;
+    padding: 6px;
+    cursor: pointer;
+    text-align: center;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.symbol-item:hover {
+    background: #f1f5f9;
+}
+
+/* Style Select */
+.style-select {
+    height: 28px;
+    padding: 0 8px;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    background: white;
+    color: #4b5563;
+    font-size: 12px;
+    cursor: pointer;
+    outline: none;
+}
+
+.style-select:hover {
+    border-color: #d1d5db;
+}
+
+.style-select:focus {
+    border-color: #3b82f6;
+}
+
+/* More Menu */
+.more-options-container {
+    position: relative;
+}
+
+.more-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    min-width: 220px;
+    padding: 12px;
+    z-index: 1200;
+}
+
+.more-tools-row {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+
+.stats-item {
+    font-size: 12px;
+    color: #64748b;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.stats-item strong {
+    color: #0f172a;
+}
+
+.dropdown-action {
+    font-size: 12px;
+    color: #2563eb;
+    padding: 8px 0 0 0;
+    cursor: pointer;
+    font-weight: 500;
+    margin-top: 4px;
+    border-top: 1px solid #f1f5f9;
+}
+
+/* Preview Mode */
+.preview-active .toolbar-row:not(.row-1) .toolbar-group:not(.more-options-container) {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.preview-active .toolbar-row:not(.row-1) {
+    background-color: #f8fafc;
+}
+
+@media (max-width: 768px) {
+    .toolbar-row {
+        flex-wrap: wrap;
+        height: auto;
+    }
+}

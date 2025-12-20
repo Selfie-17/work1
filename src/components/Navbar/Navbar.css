@@ -45,6 +45,57 @@
     margin: 0 2rem;
 }
 
+.centered-logo {
+    margin: 0 auto;
+}
+
+.navbar-title-edit {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.back-button {
+    font-size: 1.25rem;
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.back-button:hover {
+    transform: translateX(-2px);
+}
+
+.nav-title-input {
+    background: transparent;
+    border: 1px solid transparent;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-main);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    outline: none;
+    transition: all 0.2s;
+    width: 300px;
+}
+
+.nav-title-input:hover {
+    background: #f3f4f6;
+}
+
+.nav-title-input:focus {
+    background: white;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+.nav-save-status {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-style: italic;
+    white-space: nowrap;
+}
+
 .saved-to-link {
     display: flex;
     align-items: center;

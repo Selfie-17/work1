@@ -3,7 +3,7 @@ import './Navbar.css';
 import Button from '../Button/Button';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 
-const Navbar = ({ searchQuery, onSearchChange }) => {
+const Navbar = ({ searchQuery, onSearchChange, docTitle, onTitleChange, isSaving }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const user = JSON.parse(localStorage.getItem('user'));
@@ -55,14 +55,35 @@ const Navbar = ({ searchQuery, onSearchChange }) => {
     return (
         <nav className="navbar">
             <div className="navbar-left">
-                <Link to="/dashboard" className="logo">
-                    <span className="logo-icon">📄</span>
-                    <span className="logo-text">DocEditor</span>
-                </Link>
+                {isEditing ? (
+                    <div className="navbar-title-edit">
+                        <Link to="/dashboard" className="back-button" title="Back to Dashboard">
+                            🔙
+                        </Link>
+                        <input
+                            type="text"
+                            className="nav-title-input"
+                            value={docTitle}
+                            onChange={(e) => onTitleChange(e.target.value)}
+                            placeholder="Document title"
+                        />
+                        {isSaving && <span className="nav-save-status">Saving...</span>}
+                    </div>
+                ) : (
+                    <Link to="/dashboard" className="logo">
+                        <span className="logo-icon">📄</span>
+                        <span className="logo-text">DocEditor</span>
+                    </Link>
+                )}
             </div>
 
-            {!isEditing && (
-                <div className="navbar-center">
+            <div className="navbar-center">
+                {isEditing ? (
+                    <Link to="/dashboard" className="logo centered-logo">
+                        <span className="logo-icon">📄</span>
+                        <span className="logo-text">DocEditor</span>
+                    </Link>
+                ) : (
                     <div className="search-bar">
                         <span className="search-icon">🔍</span>
                         <input
@@ -72,8 +93,8 @@ const Navbar = ({ searchQuery, onSearchChange }) => {
                             onChange={(e) => onSearchChange && onSearchChange(e.target.value)}
                         />
                     </div>
-                </div>
-            )}
+                )}
+            </div>
 
             <div className="navbar-right">
                 {user ? (

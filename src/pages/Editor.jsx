@@ -1,8 +1,7 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import Navbar from '../components/Navbar/Navbar';
-import DocumentHeader from '../components/DocumentHeader/DocumentHeader';
-import EditorToolbar from '../components/EditorToolbar/EditorToolbar';
+import Toolbar from '../components/Toolbar/Toolbar';
 import RichEditor from '../components/RichEditor/RichEditor';
 import API_BASE_URL from '../config';
 
@@ -13,6 +12,8 @@ const Editor = () => {
     const [docTitle, setDocTitle] = useState('Loading...');
     const [loading, setLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [isPreviewMode, setIsPreviewMode] = useState(false);
+    const [stats, setStats] = useState({ chars: 0, words: 0 });
     const saveTimeoutRef = useRef(null);
 
     // Fetch document on load
@@ -36,23 +37,92 @@ const Editor = () => {
         fetchDoc();
     }, [id]);
 
-    const handleCommand = useCallback((command, value) => {
-        if (richEditorRef.current) {
-            richEditorRef.current.executeCommand(command, value);
-        }
-    }, []);
 
     const updateActiveStates = useCallback(() => {
+        if (!richEditorRef.current) return;
+        const editor = richEditorRef.current.getElement();
+        const text = editor.innerText || "";
+        setStats({
+            chars: text.length,
+            words: text.trim() === "" ? 0 : text.trim().split(/\s+/).length
+        });
+
         const states = {
             bold: document.queryCommandState('bold'),
             italic: document.queryCommandState('italic'),
             underline: document.queryCommandState('underline'),
-            insertUnorderedList: document.queryCommandState('insertUnorderedList'),
-            insertOrderedList: document.queryCommandState('insertOrderedList'),
+            strike: document.queryCommandState('strikethrough'),
+            super: document.queryCommandState('superscript'),
+            sub: document.queryCommandState('subscript'),
+            unorderedList: document.queryCommandState('insertUnorderedList'),
+            orderedList: document.queryCommandState('insertOrderedList'),
+            justifyLeft: document.queryCommandState('justifyLeft'),
+            justifyCenter: document.queryCommandState('justifyCenter'),
+            justifyRight: document.queryCommandState('justifyRight'),
+            justifyFull: document.queryCommandState('justifyFull'),
             code: !!document.queryCommandValue('formatBlock')?.match(/code/i) || !!window.getSelection().anchorNode?.parentElement?.closest('code'),
             link: !!window.getSelection().anchorNode?.parentElement?.closest('a'),
         };
         setActiveStates(states);
+    }, []);
+
+    const handleShare = useCallback(() => {
+        const url = window.location.href;
+        if (navigator.share) {
+            navigator.share({
+                title: docTitle,
+                url: url
+            }).catch(console.error);
+        } else {
+            navigator.clipboard.writeText(url);
+            alert('Link copied to clipboard!');
+        }
+    }, [docTitle]);
+
+    const handlePrint = useCallback(() => {
+        window.print();
+    }, []);
+
+    const handleExport = useCallback(() => {
+        if (!richEditorRef.current) return;
+        const html = richEditorRef.current.getHTML();
+        // Simple client-side Markdown "conversion" or just HTML for now
+        // To be real Markdown, we'd need Turndown. Applying a simple Blob for .md
+        const blob = new Blob([html], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${docTitle || 'document'}.md`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }, [docTitle]);
+
+    const handleSearch = useCallback(() => {
+        const query = prompt("Find in document:");
+        if (query) {
+            // Use browser native find
+            window.find(query);
+        }
+    }, []);
+
+    const handleTransformCase = useCallback((mode) => {
+        const selection = window.getSelection();
+        if (!selection.rangeCount) return;
+        const range = selection.getRangeAt(0);
+        const content = range.toString();
+        if (!content) return;
+        const transformed = mode === 'upper' ? content.toUpperCase() : content.toLowerCase();
+        document.execCommand('insertText', false, transformed);
+    }, []);
+
+    const handleInsertDate = useCallback(() => {
+        const date = new Date().toLocaleDateString(undefined, {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+        document.execCommand('insertText', false, date);
     }, []);
 
     const handleSave = useCallback(async (forcedTitle = null, forcedContent = null) => {
@@ -115,23 +185,34 @@ const Editor = () => {
 
     return (
         <div className="editor-page">
-            <Navbar />
-            <DocumentHeader
-                title={docTitle}
+            <Navbar
+                docTitle={docTitle}
                 onTitleChange={(newTitle) => {
                     setDocTitle(newTitle);
                     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
                     saveTimeoutRef.current = setTimeout(() => handleSave(newTitle), 1000);
                 }}
-                onSave={() => handleSave()}
                 isSaving={isSaving}
             />
-            <EditorToolbar onCommand={handleCommand} activeStates={activeStates} />
+            <Toolbar
+                activeStates={activeStates}
+                onSave={() => handleSave()}
+                onShare={handleShare}
+                onPrint={handlePrint}
+                onExport={handleExport}
+                onSearch={handleSearch}
+                onTogglePreview={() => setIsPreviewMode(!isPreviewMode)}
+                isPreviewMode={isPreviewMode}
+                onTransformCase={handleTransformCase}
+                onInsertDate={handleInsertDate}
+                stats={stats}
+            />
             <RichEditor
                 ref={richEditorRef}
                 onSelectionChange={updateActiveStates}
                 onContentChange={handleContentChange}
                 onBlur={handleBlur}
+                readOnly={isPreviewMode}
             />
         </div>
     );

@@ -16,26 +16,132 @@
     border-radius: 0.125rem;
     min-height: 1056px;
     /* A4-ish height */
+    display: flex;
+    flex-direction: column;
 }
 
 .editable-area {
     outline: none;
     font-size: 1rem;
     color: #374151;
+    flex-grow: 1;
 }
 
 .editable-area h1 {
     font-size: 2.25rem;
     font-weight: 700;
     margin-bottom: 2rem;
+    color: #111827;
 }
 
-.editable-area p {
+.editable-area h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-top: 1.5rem;
     margin-bottom: 1rem;
+    border-bottom: 1px solid #e5e7eb;
+    padding-bottom: 0.3rem;
+    color: #1f2937;
+}
+
+.editable-area h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-top: 1.25rem;
+    margin-bottom: 0.75rem;
+    color: #374151;
+}
+
+.editable-area blockquote {
+    border-left: 4px solid #d1d5db;
+    padding-left: 1rem;
+    margin-left: 0;
+    margin-right: 0;
+    color: #6b7280;
+    font-style: italic;
+}
+
+.editable-area code {
+    background-color: #f3f4f6;
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.25rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 0.875rem;
+}
+
+.editable-area pre {
+    background-color: #f3f4f6;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    overflow-x: auto;
+    margin-bottom: 1rem;
+}
+
+.editable-area pre code {
+    background-color: transparent;
+    padding: 0;
+}
+
+.editable-area table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1rem;
+}
+
+.editable-area th,
+.editable-area td {
+    border: 1px solid #e5e7eb;
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+}
+
+.editable-area hr {
+    border: 0;
+    border-top: 2px solid #e5e7eb;
+    margin: 2rem 0;
 }
 
 .editable-area:empty:before {
     content: attr(placeholder);
     color: #9ca3af;
     pointer-events: none;
+}
+
+.editor-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 0;
+    background-color: #ffffff;
+    border-top: 1px solid #f3f4f6;
+    margin-top: 2rem;
+    font-size: 0.75rem;
+    color: #9ca3af;
+}
+
+.footer-left {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.tag-pill {
+    background-color: #f9fafb;
+    border: 1px solid #e5e7eb;
+    padding: 0.1rem 0.5rem;
+    border-radius: 4px;
+    font-family: monospace;
+    color: #6b7280;
+}
+
+.char-count {
+    color: #9ca3af;
+}
+
+.resize-handle {
+    width: 8px;
+    height: 8px;
+    border-right: 2px solid #e5e7eb;
+    border-bottom: 2px solid #e5e7eb;
+    margin-left: 0.5rem;
+    cursor: nwse-resize;
 }
