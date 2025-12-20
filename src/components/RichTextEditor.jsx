@@ -1,321 +1,93 @@
-import { useState, useRef, useCallback } from 'react';
-import {
-    Undo2, Redo2, Bold, Italic, Underline, Highlighter,
-    Sparkles, Link, List, ListOrdered, AlignLeft, AlignCenter,
-    AlignRight, Table, ChevronDown, X
-} from 'lucide-react';
+import { useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import './RichTextEditor.css';
 
-export default function RichTextEditor() {
-    const editorRef = useRef(null);
-    const [activeFormats, setActiveFormats] = useState({});
-    const [showLinkModal, setShowLinkModal] = useState(false);
-    const [linkUrl, setLinkUrl] = useState('');
-    const [linkText, setLinkText] = useState('');
-    const [savedSelection, setSavedSelection] = useState(null);
+const RichTextEditor = forwardRef(({ initialContent = '', onChange }, ref) => {
+    const containerRef = useRef(null);
+    const editorInstanceRef = useRef(null);
+    const initAttempted = useRef(false);
 
-    const execCommand = useCallback((command, value = null) => {
-        document.execCommand(command, false, value);
-        editorRef.current?.focus();
-        updateActiveFormats();
-    }, []);
+    useImperativeHandle(ref, () => ({
+        getHTMLCode: () => {
+            return editorInstanceRef.current?.getHTMLCode() || '';
+        },
+        setHTMLCode: (html) => {
+            editorInstanceRef.current?.setHTMLCode(html);
+        },
+        getText: () => {
+            return editorInstanceRef.current?.getText() || '';
+        },
+        focus: () => {
+            editorInstanceRef.current?.focus();
+        }
+    }));
 
-    // Check if selection has highlight
-    const checkHighlight = () => {
-        const selection = window.getSelection();
-        if (selection.rangeCount > 0) {
-            const parent = selection.anchorNode?.parentElement;
-            if (parent) {
-                const bgColor = window.getComputedStyle(parent).backgroundColor;
-                return bgColor === 'rgb(255, 255, 0)' || bgColor === 'yellow';
+    useEffect(() => {
+        if (initAttempted.current) return;
+
+        let checkInterval;
+        let isMounted = true;
+
+        const initEditor = () => {
+            if (!isMounted || !containerRef.current || editorInstanceRef.current) return;
+
+            if (window.RichTextEditor) {
+                try {
+                    initAttempted.current = true;
+
+                    // Initialize the editor
+                    editorInstanceRef.current = new window.RichTextEditor(containerRef.current);
+
+                    // Set initial content
+                    if (initialContent) {
+                        editorInstanceRef.current.setHTMLCode(initialContent);
+                    } else {
+                        editorInstanceRef.current.setHTMLCode('<p>Start writing here...</p>');
+                    }
+
+                    // Set up change handler
+                    if (onChange) {
+                        editorInstanceRef.current.attachEvent('change', () => {
+                            if (isMounted) {
+                                onChange(editorInstanceRef.current.getHTMLCode());
+                            }
+                        });
+                    }
+                } catch (error) {
+                    console.error('Failed to initialize RichTextEditor:', error);
+                }
             }
-        }
-        return false;
-    };
+        };
 
-    const updateActiveFormats = () => {
-        setActiveFormats({
-            bold: document.queryCommandState('bold'),
-            italic: document.queryCommandState('italic'),
-            underline: document.queryCommandState('underline'),
-            highlight: checkHighlight(),
-        });
-    };
-
-    const handleInput = () => {
-        updateActiveFormats();
-    };
-
-    const handleKeyUp = () => {
-        updateActiveFormats();
-    };
-
-    // Save selection before opening modal
-    const saveSelection = () => {
-        const selection = window.getSelection();
-        if (selection.rangeCount > 0) {
-            setSavedSelection(selection.getRangeAt(0).cloneRange());
-            setLinkText(selection.toString());
-        }
-    };
-
-    // Restore selection
-    const restoreSelection = () => {
-        if (savedSelection) {
-            const selection = window.getSelection();
-            selection.removeAllRanges();
-            selection.addRange(savedSelection);
-        }
-    };
-
-    // Open link modal
-    const openLinkModal = () => {
-        saveSelection();
-        setLinkUrl('');
-        setShowLinkModal(true);
-    };
-
-    // Insert link
-    const insertLink = () => {
-        if (linkUrl) {
-            restoreSelection();
-            if (linkText) {
-                const html = `<a href="${linkUrl}" target="_blank">${linkText}</a>`;
-                execCommand('insertHTML', html);
+        // Wait for scripts to load
+        const timeout = setTimeout(() => {
+            if (window.RichTextEditor) {
+                initEditor();
             } else {
-                execCommand('createLink', linkUrl);
+                checkInterval = setInterval(() => {
+                    if (window.RichTextEditor) {
+                        clearInterval(checkInterval);
+                        initEditor();
+                    }
+                }, 200);
             }
-        }
-        setShowLinkModal(false);
-        setLinkUrl('');
-        setLinkText('');
-        setSavedSelection(null);
-    };
+        }, 100);
 
-    const insertTable = () => {
-        const html = `
-      <table>
-        <tr><td>Cell 1</td><td>Cell 2</td><td>Cell 3</td></tr>
-        <tr><td>Cell 4</td><td>Cell 5</td><td>Cell 6</td></tr>
-      </table>
-    `;
-        execCommand('insertHTML', html);
-    };
-
-    const ToolbarButton = ({ icon: Icon, command, active, onClick, title }) => (
-        <button
-            className={`toolbar-btn ${active ? 'active' : ''}`}
-            onClick={onClick || (() => execCommand(command))}
-            title={title}
-            type="button"
-        >
-            <Icon />
-        </button>
-    );
+        return () => {
+            isMounted = false;
+            clearTimeout(timeout);
+            if (checkInterval) clearInterval(checkInterval);
+        };
+    }, []);
 
     return (
         <div className="editor-wrapper">
             <div className="editor-container">
-                {/* Toolbar */}
-                <div className="editor-toolbar">
-                    <div className="toolbar-group">
-                        <ToolbarButton icon={Undo2} command="undo" title="Undo" />
-                        <ToolbarButton icon={Redo2} command="redo" title="Redo" />
-                    </div>
-
-                    <span className="toolbar-divider" />
-
-                    <button className="paragraph-select">
-                        Paragraph
-                        <ChevronDown />
-                    </button>
-
-                    <span className="toolbar-divider" />
-
-                    <div className="toolbar-group">
-                        <ToolbarButton
-                            icon={Bold}
-                            command="bold"
-                            active={activeFormats.bold}
-                            title="Bold"
-                        />
-                        <ToolbarButton
-                            icon={Italic}
-                            command="italic"
-                            active={activeFormats.italic}
-                            title="Italic"
-                        />
-                        <ToolbarButton
-                            icon={Underline}
-                            command="underline"
-                            active={activeFormats.underline}
-                            title="Underline"
-                        />
-                    </div>
-
-                    <span className="toolbar-divider" />
-
-                    <div className="toolbar-group">
-                        <ToolbarButton
-                            icon={Highlighter}
-                            onClick={() => {
-                                // Toggle highlight: use backColor for better browser support
-                                const selection = window.getSelection();
-                                if (selection.rangeCount > 0 && selection.toString().length > 0) {
-                                    const range = selection.getRangeAt(0);
-                                    const parent = range.commonAncestorContainer.parentElement;
-
-                                    // Check if already highlighted
-                                    const bgColor = parent?.style?.backgroundColor ||
-                                        window.getComputedStyle(parent).backgroundColor;
-                                    const isHighlighted = bgColor === 'yellow' ||
-                                        bgColor === 'rgb(255, 255, 0)' ||
-                                        bgColor.includes('255, 255, 0');
-
-                                    if (isHighlighted) {
-                                        // Remove highlight by setting to transparent/inherit
-                                        document.execCommand('backColor', false, 'rgba(0,0,0,0)');
-                                    } else {
-                                        // Add highlight
-                                        document.execCommand('backColor', false, 'yellow');
-
-                                        // Move cursor to end of selection and collapse
-                                        // This prevents new typing from being highlighted
-                                        setTimeout(() => {
-                                            const sel = window.getSelection();
-                                            if (sel.rangeCount > 0) {
-                                                sel.collapseToEnd();
-                                            }
-                                        }, 0);
-                                    }
-                                    editorRef.current?.focus();
-                                    updateActiveFormats();
-                                }
-                            }}
-                            active={activeFormats.highlight}
-                            title="Highlight"
-                        />
-                        <ToolbarButton
-                            icon={Sparkles}
-                            onClick={() => { }}
-                            title="AI Assist"
-                        />
-                        <ToolbarButton
-                            icon={Link}
-                            onClick={openLinkModal}
-                            title="Insert Link"
-                        />
-                    </div>
-
-                    <span className="toolbar-divider" />
-
-                    <div className="toolbar-group">
-                        <ToolbarButton
-                            icon={List}
-                            command="insertUnorderedList"
-                            title="Bullet List"
-                        />
-                        <ToolbarButton
-                            icon={ListOrdered}
-                            command="insertOrderedList"
-                            title="Numbered List"
-                        />
-                    </div>
-
-                    <span className="toolbar-divider" />
-
-                    <div className="toolbar-group">
-                        <ToolbarButton
-                            icon={AlignLeft}
-                            command="justifyLeft"
-                            title="Align Left"
-                        />
-                        <ToolbarButton
-                            icon={AlignCenter}
-                            command="justifyCenter"
-                            title="Align Center"
-                        />
-                        <ToolbarButton
-                            icon={AlignRight}
-                            command="justifyRight"
-                            title="Align Right"
-                        />
-                    </div>
-
-                    <span className="toolbar-divider" />
-
-                    <ToolbarButton
-                        icon={Table}
-                        onClick={insertTable}
-                        title="Insert Table"
-                    />
-                </div>
-
-                {/* Editable Content */}
-                <div
-                    ref={editorRef}
-                    className="editor-content"
-                    contentEditable
-                    suppressContentEditableWarning
-                    onInput={handleInput}
-                    onKeyUp={handleKeyUp}
-                    onMouseUp={updateActiveFormats}
-                >
-                </div>
+                <div ref={containerRef} className="rte-container" />
             </div>
-
-            {/* Link Modal */}
-            {showLinkModal && (
-                <div className="link-modal-overlay" onClick={() => setShowLinkModal(false)}>
-                    <div className="link-modal" onClick={(e) => e.stopPropagation()}>
-                        <div className="link-modal-header">
-                            <h3>Insert Link</h3>
-                            <button
-                                className="link-modal-close"
-                                onClick={() => setShowLinkModal(false)}
-                            >
-                                <X size={20} />
-                            </button>
-                        </div>
-                        <div className="link-modal-body">
-                            <div className="link-input-group">
-                                <label>Text to display</label>
-                                <input
-                                    type="text"
-                                    value={linkText}
-                                    onChange={(e) => setLinkText(e.target.value)}
-                                    placeholder="Enter display text"
-                                />
-                            </div>
-                            <div className="link-input-group">
-                                <label>URL</label>
-                                <input
-                                    type="url"
-                                    value={linkUrl}
-                                    onChange={(e) => setLinkUrl(e.target.value)}
-                                    placeholder="https://example.com"
-                                    autoFocus
-                                />
-                            </div>
-                        </div>
-                        <div className="link-modal-footer">
-                            <button
-                                className="link-cancel-btn"
-                                onClick={() => setShowLinkModal(false)}
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                className="link-insert-btn"
-                                onClick={insertLink}
-                                disabled={!linkUrl}
-                            >
-                                Insert Link
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
-}
+});
+
+RichTextEditor.displayName = 'RichTextEditor';
+
+export default RichTextEditor;
