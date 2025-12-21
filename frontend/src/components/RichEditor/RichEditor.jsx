@@ -27,16 +27,175 @@ const RichEditor = forwardRef(({ onSelectionChange, onContentChange, readOnly = 
         } else if (command === 'createLink') {
             const url = prompt('Enter URL:');
             if (url) document.execCommand('createLink', false, url);
+        } else if (command === 'hiliteColor') {
+            // Chrome uses hiliteColor, but backColor is sometimes needed as fallback
+            const success = document.execCommand('hiliteColor', false, value);
+            if (!success) document.execCommand('backColor', false, value);
+        } else if (command === 'insertTable') {
+            const { rows, cols } = value || { rows: 2, cols: 2 };
+            let table = '<table border="1" style="width:100%; border-collapse: collapse;">';
+            for (let i = 0; i < rows; i++) {
+                table += '<tr>';
+                for (let j = 0; j < cols; j++) {
+                    table += '<td>&nbsp;</td>';
+                }
+                table += '</tr>';
+            }
+            table += '</table>';
+            document.execCommand('insertHTML', false, table);
         } else {
             document.execCommand(command, false, value);
         }
 
+        // Force an input event to trigger autosave/updates
+        const event = new Event('input', { bubbles: true });
+        editorRef.current.dispatchEvent(event);
+
         if (onSelectionChange) onSelectionChange();
+    };
+
+    // Table manipulation helpers
+    const getSelectedTableCell = () => {
+        const selection = window.getSelection();
+        if (!selection.rangeCount) return null;
+        let node = selection.anchorNode;
+        while (node && node !== editorRef.current) {
+            if (node.nodeName === 'TD' || node.nodeName === 'TH') return node;
+            node = node.parentNode;
+        }
+        return null;
+    };
+
+    const getTableInfo = () => {
+        const cell = getSelectedTableCell();
+        if (!cell) return null;
+        const table = cell.closest('table');
+        if (!table) return null;
+
+        const rect = table.getBoundingClientRect();
+        return {
+            table,
+            cell,
+            rect: {
+                top: rect.top,
+                left: rect.left,
+                width: rect.width,
+                height: rect.height
+            }
+        };
+    };
+
+    const handleTableAction = (action, value, targetTable = null, targetRowIndex = -1, targetColIndex = -1) => {
+        let cell = getSelectedTableCell();
+        let table = targetTable || (cell ? cell.closest('table') : null);
+        if (!table) return;
+
+        // Use passed indices if available, otherwise fallback to selection
+        let rowIndex = targetRowIndex !== -1 ? targetRowIndex : (cell ? Array.from(table.rows).indexOf(cell.parentNode) : -1);
+        let colIndex = targetColIndex !== -1 ? targetColIndex : (cell ? Array.from(cell.parentNode.cells).indexOf(cell) : -1);
+
+        switch (action) {
+            case 'addRowAbove':
+            case 'addRowBelow': {
+                const idx = action === 'addRowAbove' ? rowIndex : rowIndex + 1;
+                if (idx < 0) return;
+                const newRow = table.insertRow(idx);
+                // For template, use the row we are inserting relative to, or the first row
+                const refIdx = (rowIndex === -1 || rowIndex >= table.rows.length) ? 0 : rowIndex;
+                const refRow = table.rows[refIdx];
+                const colCount = refRow ? refRow.cells.length : 1;
+                for (let i = 0; i < colCount; i++) {
+                    const newCell = newRow.insertCell(i);
+                    newCell.innerHTML = '&nbsp;';
+                }
+                break;
+            }
+            case 'deleteRow':
+                if (rowIndex !== -1 && table.rows[rowIndex]) {
+                    table.deleteRow(rowIndex);
+                    if (table.rows.length === 0) table.remove();
+                }
+                break;
+            case 'addColLeft':
+            case 'addColRight': {
+                const idx = action === 'addColLeft' ? colIndex : colIndex + 1;
+                if (idx < 0) return;
+                for (let i = 0; i < table.rows.length; i++) {
+                    const newCell = table.rows[i].insertCell(idx);
+                    newCell.innerHTML = '&nbsp;';
+                }
+                break;
+            }
+            case 'deleteCol':
+                if (colIndex !== -1) {
+                    for (let i = 0; i < table.rows.length; i++) {
+                        if (table.rows[i].cells[colIndex]) {
+                            table.rows[i].deleteCell(colIndex);
+                        }
+                    }
+                    if (table.rows[0]?.cells.length === 0) table.remove();
+                }
+                break;
+            case 'mergeCells': {
+                if (cell && colIndex < row.cells.length - 1) {
+                    const nextCell = row.cells[colIndex + 1];
+                    // Clean content and merge
+                    cell.innerHTML += nextCell.innerHTML;
+                    cell.colSpan = (cell.colSpan || 1) + (nextCell.colSpan || 1);
+                    nextCell.remove();
+                }
+                break;
+            }
+            case 'splitCell': {
+                if (cell) {
+                    if ((cell.colSpan || 1) > 1) {
+                        cell.colSpan = cell.colSpan - 1;
+                        const newCell = row.insertCell(colIndex + 1);
+                        newCell.innerHTML = '&nbsp;';
+                    } else {
+                        // Split a single cell into two by adding a column locally in this row?
+                        // standard table behavior: add column to entire table
+                        handleTableAction('addColRight', null, table, rowIndex, colIndex);
+                    }
+                }
+                break;
+            }
+            case 'deleteTable':
+                table.remove();
+                break;
+            case 'setCellBackground':
+                if (cell) cell.style.backgroundColor = value;
+                break;
+            case 'setCellVAlign':
+                if (cell) cell.style.verticalAlign = value || "middle";
+                break;
+            case 'toggleHeaderRow': {
+                if (cell) {
+                    const isHeader = cell.nodeName === 'TH';
+                    const newTag = isHeader ? 'td' : 'th';
+                    const newCell = document.createElement(newTag);
+                    newCell.innerHTML = cell.innerHTML;
+                    Array.from(cell.attributes).forEach(attr => newCell.setAttribute(attr.name, attr.value));
+                    cell.parentNode.replaceChild(newCell, cell);
+                }
+                break;
+            }
+            case 'setTableBorders':
+                table.style.borderCollapse = 'collapse';
+                table.style.border = value;
+                Array.from(table.getElementsByTagName('td')).forEach(td => td.style.border = value);
+                Array.from(table.getElementsByTagName('th')).forEach(th => th.style.border = value);
+                break;
+            default: break;
+        }
+        handleInput();
     };
 
     // Expose methods via ref
     useImperativeHandle(ref, () => ({
         executeCommand: applyCommand,
+        executeTableAction: handleTableAction,
+        getTableInfo,
         getHTML: () => editorRef.current.innerHTML,
         setHTML: (html) => { editorRef.current.innerHTML = html; },
         getPlainText: () => editorRef.current.innerText,

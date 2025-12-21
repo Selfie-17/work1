@@ -1,0 +1,104 @@
+.table-edge-control {
+    position: fixed;
+    z-index: 1500;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.table-edge-control.row {
+    height: 4px;
+    margin-top: -2px;
+}
+
+.table-edge-control.col {
+    width: 4px;
+    margin-left: -2px;
+}
+
+.edge-spacer-h {
+    width: 100%;
+    height: 1px;
+    background: #2563eb;
+    position: relative;
+}
+
+.edge-spacer-v {
+    height: 100%;
+    width: 1px;
+    background: #2563eb;
+    position: relative;
+}
+
+.edge-plus-btn {
+    pointer-events: auto;
+    width: 18px;
+    height: 18px;
+    background: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s;
+}
+
+.edge-plus-btn:hover {
+    transform: translate(-50%, -50%) scale(1.2);
+    background: #1d4ed8;
+}
+
+/* Delete controls */
+.table-edge-control.delete {
+    pointer-events: auto;
+    margin-top: -12px;
+    margin-left: -12px;
+    display: flex;
+    gap: 4px;
+}
+
+.edge-del-btn {
+    width: 24px;
+    height: 24px;
+    background: #dc2626;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s;
+}
+
+.edge-del-btn:hover {
+    transform: scale(1.1);
+}
+
+.edge-del-btn.row-del {
+    background: #ef4444;
+}
+
+.edge-del-btn.col-del {
+    background: #f87171;
+}
+
+.edge-del-btn.row-del:hover {
+    background: #dc2626;
+}
+
+.edge-del-btn.col-del:hover {
+    background: #ef4444;
+}

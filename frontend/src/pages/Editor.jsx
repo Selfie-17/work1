@@ -3,6 +3,9 @@ import { useParams } from 'react-router-dom';
 import Navbar from '../components/Navbar/Navbar';
 import Toolbar from '../components/Toolbar/Toolbar';
 import RichEditor from '../components/RichEditor/RichEditor';
+import FindReplace from '../components/FindReplace/FindReplace';
+import TableContextToolbar from '../components/Toolbar/TableContextToolbar';
+import TableEdgeControls from '../components/Toolbar/TableEdgeControls';
 import API_BASE_URL from '../config';
 
 const Editor = () => {
@@ -13,6 +16,7 @@ const Editor = () => {
     const [loading, setLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [isPreviewMode, setIsPreviewMode] = useState(false);
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [stats, setStats] = useState({ chars: 0, words: 0 });
     const saveTimeoutRef = useRef(null);
 
@@ -37,6 +41,8 @@ const Editor = () => {
         fetchDoc();
     }, [id]);
 
+
+    const [tableInfo, setTableInfo] = useState(null);
 
     const updateActiveStates = useCallback(() => {
         if (!richEditorRef.current) return;
@@ -64,6 +70,7 @@ const Editor = () => {
             link: !!window.getSelection().anchorNode?.parentElement?.closest('a'),
         };
         setActiveStates(states);
+        setTableInfo(richEditorRef.current.getTableInfo());
     }, []);
 
     const handleShare = useCallback(() => {
@@ -196,17 +203,31 @@ const Editor = () => {
             />
             <Toolbar
                 activeStates={activeStates}
+                onCommand={(cmd, val) => richEditorRef.current?.executeCommand(cmd, val)}
+                onTableAction={(action) => richEditorRef.current?.executeTableAction(action)}
                 onSave={() => handleSave()}
                 onShare={handleShare}
                 onPrint={handlePrint}
                 onExport={handleExport}
-                onSearch={handleSearch}
+                onSearch={() => setIsSearchOpen(!isSearchOpen)}
                 onTogglePreview={() => setIsPreviewMode(!isPreviewMode)}
                 isPreviewMode={isPreviewMode}
                 onTransformCase={handleTransformCase}
                 onInsertDate={handleInsertDate}
                 stats={stats}
             />
+            <FindReplace
+                isOpen={isSearchOpen}
+                onClose={() => setIsSearchOpen(false)}
+                editorRef={richEditorRef}
+            />
+            {tableInfo && !isPreviewMode && (
+                <TableContextToolbar
+                    info={tableInfo}
+                    onAction={(action, val) => richEditorRef.current?.executeTableAction(action, val)}
+                />
+            )}
+            <TableEdgeControls editorRef={richEditorRef} />
             <RichEditor
                 ref={richEditorRef}
                 onSelectionChange={updateActiveStates}
