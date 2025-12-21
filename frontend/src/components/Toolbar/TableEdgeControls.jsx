@@ -143,16 +143,6 @@ const TableEdgeControls = ({ editorRef }) => {
 
     return (
         <div className={`table-edge-control ${activeControl.type}`} style={style}>
-            {activeControl.type === 'row' && (
-                <div className="edge-spacer-h">
-                    <button className="edge-plus-btn" onClick={handleAction}>+</button>
-                </div>
-            )}
-            {activeControl.type === 'col' && (
-                <div className="edge-spacer-v">
-                    <button className="edge-plus-btn" onClick={handleAction}>+</button>
-                </div>
-            )}
             {activeControl.type === 'delete' && (
                 <div className="edge-delete-btns">
                     <button className="edge-del-btn row-del" onClick={(e) => handleDelete(e, 'row')} title="Delete Row">R×</button>

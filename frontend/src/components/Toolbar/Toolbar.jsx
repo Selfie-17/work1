@@ -213,6 +213,7 @@ const SymbolPicker = ({ onSelect }) => {
                             <div
                                 key={item.s}
                                 className="symbol-item-advanced"
+                                onMouseDown={() => window.__saveSelection && window.__saveSelection()}
                                 onClick={() => { onSelect(item.s); setIsOpen(false); }}
                                 title={`${item.n}: ${item.d}`}
                             >
@@ -359,30 +360,30 @@ export default function Toolbar({
             {/* Row 1: Formatting focus */}
             <div className="toolbar-row row-1">
                 <Group>
-                    <Btn icon={<Icons.Bold />} onClick={() => onCommand("bold")} active={activeStates.bold} title="Bold" />
-                    <Btn icon={<Icons.Italic />} onClick={() => onCommand("italic")} active={activeStates.italic} title="Italic" />
-                    <Btn icon={<Icons.Underline />} onClick={() => onCommand("underline")} active={activeStates.underline} title="Underline" />
-                    <Btn icon={<Icons.Superscript />} onClick={() => onCommand("superscript")} active={activeStates.super} title="Superscript" />
-                    <Btn icon={<Icons.Subscript />} onClick={() => onCommand("subscript")} active={activeStates.sub} title="Subscript" />
-                    <ColorPicker icon="A" label="Text Color" command="foreColor" colors={colors} onSelect={c => onCommand("foreColor", c)} />
-                    <ColorPicker icon="🖌️" label="Highlight" command="hiliteColor" colors={highlights} onSelect={c => onCommand("hiliteColor", c)} />
+                    <Btn icon={<Icons.Bold />} onMouseDown={() => window.__saveSelection && window.__saveSelection()} onClick={() => onCommand("bold")} active={activeStates.bold} title="Bold" />
+                    <Btn icon={<Icons.Italic />} onMouseDown={() => window.__saveSelection && window.__saveSelection()} onClick={() => onCommand("italic")} active={activeStates.italic} title="Italic" />
+                    <Btn icon={<Icons.Underline />} onMouseDown={() => window.__saveSelection && window.__saveSelection()} onClick={() => onCommand("underline")} active={activeStates.underline} title="Underline" />
+                    <Btn icon={<Icons.Superscript />} onMouseDown={() => window.__saveSelection && window.__saveSelection()} onClick={() => onCommand("superscript")} active={activeStates.super} title="Superscript" />
+                    <Btn icon={<Icons.Subscript />} onMouseDown={() => window.__saveSelection && window.__saveSelection()} onClick={() => onCommand("subscript")} active={activeStates.sub} title="Subscript" />
+                    <ColorPicker icon="A" label="Text Color" command="foreColor" colors={colors} onSelect={c => { window.__saveSelection && window.__saveSelection(); onCommand("foreColor", c); }} />
+                    <ColorPicker icon="🖌️" label="Highlight" command="hiliteColor" colors={highlights} onSelect={c => { window.__saveSelection && window.__saveSelection(); onCommand("hiliteColor", c); }} />
                 </Group>
 
                 <Group>
-                    <Btn icon={<Icons.AlignLeft />} onClick={() => onCommand("justifyLeft")} active={activeStates.justifyLeft} title="Align Left" />
-                    <Btn icon={<Icons.AlignCenter />} onClick={() => onCommand("justifyCenter")} active={activeStates.justifyCenter} title="Align Center" />
-                    <Btn icon={<Icons.AlignRight />} onClick={() => onCommand("justifyRight")} active={activeStates.justifyRight} title="Align Right" />
-                    <Btn icon={<Icons.AlignJustify />} onClick={() => onCommand("justifyFull")} active={activeStates.justifyFull} title="Justify" />
+                    <Btn icon={<Icons.AlignLeft />} onMouseDown={() => window.__saveSelection && window.__saveSelection()} onClick={() => onCommand("justifyLeft")} active={activeStates.justifyLeft} title="Align Left" />
+                    <Btn icon={<Icons.AlignCenter />} onMouseDown={() => window.__saveSelection && window.__saveSelection()} onClick={() => onCommand("justifyCenter")} active={activeStates.justifyCenter} title="Align Center" />
+                    <Btn icon={<Icons.AlignRight />} onMouseDown={() => window.__saveSelection && window.__saveSelection()} onClick={() => onCommand("justifyRight")} active={activeStates.justifyRight} title="Align Right" />
+                    <Btn icon={<Icons.AlignJustify />} onMouseDown={() => window.__saveSelection && window.__saveSelection()} onClick={() => onCommand("justifyFull")} active={activeStates.justifyFull} title="Justify" />
                 </Group>
 
                 <Group>
-                    <Btn icon={<Icons.ListNumber />} onClick={() => onCommand("insertOrderedList")} active={activeStates.orderedList} title="Numbered List" />
-                    <Btn icon={<Icons.ListBullet />} onClick={() => onCommand("insertUnorderedList")} active={activeStates.unorderedList} title="Bullet List" />
+                    <Btn icon={<Icons.ListNumber />} onMouseDown={() => window.__saveSelection && window.__saveSelection()} onClick={() => onCommand("insertOrderedList")} active={activeStates.orderedList} title="Numbered List" />
+                    <Btn icon={<Icons.ListBullet />} onMouseDown={() => window.__saveSelection && window.__saveSelection()} onClick={() => onCommand("insertUnorderedList")} active={activeStates.unorderedList} title="Bullet List" />
                 </Group>
 
                 <Group>
-                    <Btn icon={<Icons.Quote />} onClick={() => onCommand("formatBlock", "blockquote")} title="Blockquote" />
-                    <EmojiPicker onSelect={emoji => onCommand("insertHTML", emoji)} />
+                    <Btn icon={<Icons.Quote />} onMouseDown={() => window.__saveSelection && window.__saveSelection()} onClick={() => onCommand("formatBlock", "blockquote")} title="Blockquote" />
+                    <EmojiPicker onSelect={emoji => { window.__saveSelection && window.__saveSelection(); onCommand("insertHTML", emoji); }} />
                 </Group>
 
                 <div className="toolbar-spacer" />
@@ -398,23 +399,23 @@ export default function Toolbar({
             {/* Row 2: Insertion and Navigation focus */}
             <div className="toolbar-row row-2">
                 <Group>
-                    <Btn icon={<Icons.Eraser />} onClick={() => onCommand("removeFormat")} title="Clear Formatting" />
-                    <Btn icon={<Icons.Scissors />} onClick={() => onCommand("cut")} title="Cut" />
-                    <Btn icon={<Icons.Copy />} onClick={() => onCommand("copy")} title="Copy" />
-                    <Btn icon={<Icons.Paste />} onClick={() => navigator.clipboard.readText().then(t => onCommand("insertHTML", t))} title="Paste" />
-                    <Btn icon={<Icons.Search />} onClick={onSearch} title="Search" />
+                    <Btn icon={<Icons.Eraser />} onMouseDown={() => window.__saveSelection && window.__saveSelection()} onClick={() => onCommand("removeFormat")} title="Clear Formatting" />
+                    <Btn icon={<Icons.Scissors />} onMouseDown={() => window.__saveSelection && window.__saveSelection()} onClick={() => onCommand("cut")} title="Cut" />
+                    <Btn icon={<Icons.Copy />} onMouseDown={() => window.__saveSelection && window.__saveSelection()} onClick={() => onCommand("copy")} title="Copy" />
+                    <Btn icon={<Icons.Paste />} onMouseDown={() => window.__saveSelection && window.__saveSelection()} onClick={() => navigator.clipboard.readText().then(t => onCommand("insertHTML", t))} title="Paste" />
+                    <Btn icon={<Icons.Search />} onMouseDown={() => window.__saveSelection && window.__saveSelection()} onClick={onSearch} title="Search" />
                 </Group>
 
                 <Group>
-                    <Btn icon={<Icons.Link />} onClick={() => onMediaTrigger('link')} title="Link" />
-                    <SymbolPicker onSelect={s => onCommand("insertHTML", s)} />
-                    <TablePicker onInsert={val => onCommand("insertTable", val)} />
-                    <Btn icon={<Icons.Image />} onClick={() => onMediaTrigger('image')} title="Image" />
-                    <Btn icon={<Icons.Video />} onClick={() => onMediaTrigger('video')} title="Video" />
+                    <Btn icon={<Icons.Link />} onMouseDown={() => window.__saveSelection && window.__saveSelection()} onClick={() => onMediaTrigger('link')} title="Link" />
+                    <SymbolPicker onSelect={s => { window.__saveSelection && window.__saveSelection(); onCommand("insertHTML", s); }} />
+                    <TablePicker onInsert={val => { window.__saveSelection && window.__saveSelection(); onCommand("insertTable", val); }} />
+                    <Btn icon={<Icons.Image />} onMouseDown={() => window.__saveSelection && window.__saveSelection()} onClick={() => onMediaTrigger('image')} title="Image" />
+                    <Btn icon={<Icons.Video />} onMouseDown={() => window.__saveSelection && window.__saveSelection()} onClick={() => onMediaTrigger('video')} title="Video" />
                 </Group>
 
                 <Group>
-                    <select className="style-select" onChange={(e) => onCommand("formatBlock", e.target.value)} defaultValue="p">
+                    <select className="style-select" onMouseDown={() => window.__saveSelection && window.__saveSelection()} onChange={(e) => onCommand("formatBlock", e.target.value)} defaultValue="p">
                         <option value="p">Paragraph</option>
                         <option value="h1">Heading 1</option>
                         <option value="h2">Heading 2</option>

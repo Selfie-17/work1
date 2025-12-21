@@ -16,21 +16,20 @@ turndownService.keep(['span', 'font', 'u', 'table', 'tr', 'td', 'th', 'thead', '
 
 // Add a rule to preserve styles/attributes on tables and cells
 turndownService.addRule('preserveTableStyles', {
-    filter: ['td', 'th', 'table'],
+    filter: ['td', 'th', 'tr', 'table', 'thead', 'tbody'],
     replacement: function (content, node) {
         const tag = node.nodeName.toLowerCase();
         const style = node.getAttribute('style');
         const colspan = node.getAttribute('colspan');
         const rowspan = node.getAttribute('rowspan');
+        const border = node.getAttribute('border');
 
         let attrs = '';
         if (style) attrs += ` style="${style}"`;
         if (colspan) attrs += ` colspan="${colspan}"`;
         if (rowspan) attrs += ` rowspan="${rowspan}"`;
+        if (border) attrs += ` border="${border}"`;
 
-        if (tag === 'table') {
-            return `<table${attrs}>${content}</table>`;
-        }
         return `<${tag}${attrs}>${content}</${tag}>`;
     }
 });

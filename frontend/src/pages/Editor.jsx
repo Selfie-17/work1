@@ -22,15 +22,27 @@ const Editor = () => {
     const [stats, setStats] = useState({ chars: 0, words: 0 });
     const [mediaModal, setMediaModal] = useState({ isOpen: false, tab: 'link' });
     const [selectionText, setSelectionText] = useState('');
+    const savedSelection = useRef(null);
     const saveTimeoutRef = useRef(null);
+
+    const restoreSelection = () => {
+        const sel = window.getSelection();
+        if (savedSelection.current) {
+            sel.removeAllRanges();
+            sel.addRange(savedSelection.current);
+        }
+    };
 
     const handleMediaSubmit = useCallback((type, data) => {
         if (!richEditorRef.current) return;
         if (type === 'link') {
+            restoreSelection();
             richEditorRef.current.insertLink(data.text, data.url);
         } else if (type === 'image') {
+            restoreSelection();
             richEditorRef.current.insertImage(data.url, data.alt);
         } else if (type === 'video') {
+            restoreSelection();
             richEditorRef.current.insertVideo(data.url);
         }
     }, []);
@@ -205,6 +217,8 @@ const Editor = () => {
         };
     }, []);
 
+    // Remove global selection save for toolbar; use RichEditor ref methods instead
+
     return (
         <div className="editor-page">
             <Navbar
@@ -218,7 +232,13 @@ const Editor = () => {
             />
             <Toolbar
                 activeStates={activeStates}
-                onCommand={(cmd, val) => richEditorRef.current?.executeCommand(cmd, val)}
+                onCommand={(cmd, val) => {
+                    if (cmd === 'insertTable' || cmd === 'insertHTML') {
+                        richEditorRef.current?.applyCommandWithRestore(cmd, val, richEditorRef.current?.restoreSelection);
+                    } else {
+                        richEditorRef.current?.executeCommand(cmd, val);
+                    }
+                }}
                 onTableAction={(action) => richEditorRef.current?.executeTableAction(action)}
                 onSave={() => handleSave()}
                 onShare={handleShare}
@@ -226,7 +246,10 @@ const Editor = () => {
                 onExport={handleExport}
                 onSearch={() => setIsSearchOpen(!isSearchOpen)}
                 onMediaTrigger={(tab) => {
-                    setSelectionText(window.getSelection().toString());
+                    // Save selection before opening modal using RichEditor ref
+                    richEditorRef.current?.saveSelection();
+                    const sel = window.getSelection();
+                    setSelectionText(sel.toString());
                     setMediaModal({ isOpen: true, tab });
                 }}
                 onTransformCase={handleTransformCase}
@@ -248,7 +271,7 @@ const Editor = () => {
             {tableInfo && !isPreviewMode && (
                 <TableContextToolbar
                     info={tableInfo}
-                    onAction={(action, val) => richEditorRef.current?.executeTableAction(action, val)}
+                    onAction={(action, val) => richEditorRef.current?.executeTableAction(action, val, tableInfo?.table, tableInfo?.rowIndex ?? -1, tableInfo?.colIndex ?? -1)}
                 />
             )}
             <TableEdgeControls editorRef={richEditorRef} />
