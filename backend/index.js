@@ -22,6 +22,16 @@ app.use((req, res, next) => {
     next();
 });
 
+// Root route to verify server is running
+app.get('/', (req, res) => {
+    res.send('Backend Server is Running!');
+});
+
+// Health check route
+app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
 // Database Connection
 mongoose.connect(process.env.MONGODB_URI)
     .then(() => console.log('MongoDB connected'))
