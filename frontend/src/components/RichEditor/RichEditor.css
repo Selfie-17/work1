@@ -82,6 +82,26 @@
     padding: 0;
 }
 
+/* Link styling */
+.editable-area a {
+    color: #2563eb;
+    text-decoration: underline;
+    text-decoration-color: #93c5fd;
+    text-underline-offset: 2px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.editable-area a:hover {
+    color: #1d4ed8;
+    text-decoration-color: #2563eb;
+}
+
+.editable-area a:visited {
+    color: #7c3aed;
+    text-decoration-color: #c4b5fd;
+}
+
 .editable-area table {
     width: 100%;
     border-collapse: collapse;

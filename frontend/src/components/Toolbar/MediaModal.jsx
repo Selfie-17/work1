@@ -144,7 +144,9 @@ const MediaModal = ({ isOpen, onClose, onSubmit, initialTab = 'link', selectionT
 
                     <div className="media-modal-footer">
                         <button type="button" className="cancel-btn" onClick={onClose}>Cancel</button>
-                        <button type="submit" className="submit-btn highlight">Insert Media</button>
+                        <button type="submit" className="submit-btn highlight">
+                            {activeTab === 'link' ? 'Insert Link' : activeTab === 'image' ? 'Insert Image' : 'Insert Video'}
+                        </button>
                     </div>
                 </form>
             </div>

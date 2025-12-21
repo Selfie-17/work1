@@ -472,6 +472,15 @@ const RichEditor = forwardRef(({ onSelectionChange, onContentChange, readOnly = 
         if (onSelectionChange) onSelectionChange();
     };
 
+    // Handle link clicks - Ctrl+Click opens in new tab
+    const handleClick = (e) => {
+        const link = e.target.closest('a');
+        if (link && (e.ctrlKey || e.metaKey)) {
+            e.preventDefault();
+            window.open(link.href, '_blank', 'noopener,noreferrer');
+        }
+    };
+
     const handleKeyDown = (e) => {
         if (readOnly) {
             e.preventDefault();
@@ -509,6 +518,7 @@ const RichEditor = forwardRef(({ onSelectionChange, onContentChange, readOnly = 
                     suppressContentEditableWarning={true}
                     onKeyUp={handleKeyUp}
                     onMouseUp={handleMouseUp}
+                    onClick={handleClick}
                     onKeyDown={handleKeyDown}
                     onInput={handleInput}
                     placeholder="Start writing your lesson here..."
