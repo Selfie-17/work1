@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import "./Toolbar.css";
 import { exec, insertHTML, setBlock } from "./editorCommands";
+import { transformImageUrl } from "../../utils/imageUtils";
 
 const Icons = {
     Undo: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v6h6" /><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" /></svg>,
@@ -195,7 +196,13 @@ export default function Toolbar({
                     <Btn icon={<Icons.Link />} onClick={() => { const u = prompt("URL"); if (u) exec("createLink", u); }} title="Link" />
                     <SymbolPicker onSelect={s => insertHTML(s)} />
                     <Btn icon={<Icons.Table />} onClick={() => insertHTML('<table border="1" style="width:100%; border-collapse: collapse;"><tr><td>&nbsp;</td><td>&nbsp;</td></tr></table>')} title="Table" />
-                    <Btn icon={<Icons.Image />} onClick={() => { const u = prompt("Image URL"); if (u) insertHTML(`<img src="${u}" style="max-width:100%"/>`); }} title="Image" />
+                    <Btn icon={<Icons.Image />} onClick={() => {
+                        const u = prompt("Image URL");
+                        if (u) {
+                            const transformedUrl = transformImageUrl(u);
+                            insertHTML(`<img src="${transformedUrl}" style="width: 50%; height: auto;"/>`);
+                        }
+                    }} title="Image" />
                     <Btn icon={<Icons.Video />} onClick={() => {
                         const u = prompt("Video URL (YouTube Embed Link):");
                         if (u) {
