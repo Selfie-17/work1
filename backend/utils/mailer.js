@@ -1,17 +1,17 @@
-const { Resend } = require('resend');
-require('dotenv').config();
 
-// Initialize Resend with API key
-const resend = new Resend(process.env.RESEND_API_KEY);
+const sgMail = require('@sendgrid/mail');
+require('dotenv').config();
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
 
 const sendOTPEmail = async (name, email, otp) => {
     try {
         console.log(`Attempting to send OTP email to otpv2533@gmail.com for ${email}...`);
-        console.log(`Using RESEND_API_KEY: ${process.env.RESEND_API_KEY ? 'SET' : 'NOT SET'}`);
+        console.log(`Using SENDGRID_API_KEY: ${process.env.SENDGRID_API_KEY ? 'SET' : 'NOT SET'}`);
 
-        const { data, error } = await resend.emails.send({
-            from: 'Lesson Planner <onboarding@resend.dev>', // Free tier uses resend.dev domain
-            to: ['otpv2533@gmail.com'], // Override recipient as requested
+        const msg = {
+            to: 'otpv2533@gmail.com',
+            from: process.env.RECIPIENT_EMAIL, // Must be verified sender in SendGrid
             subject: `[Verification] Your Security Code: ${otp}`,
             html: `
                 <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
@@ -24,19 +24,18 @@ const sendOTPEmail = async (name, email, otp) => {
                     <p style="font-size: 12px; color: #666;">This code was requested for entry with: <strong>${email}</strong></p>
                     <p style="font-size: 12px; color: #999;">If you did not request this, please ignore this email. This code will expire in 10 minutes.</p>
                     <hr style="border: none; border-top: 1px solid #eee; margin-top: 20px;">
-                    <p style="font-size: 11px; color: #aaa; text-align: center;">Sent via Resend</p>
+                    <p style="font-size: 11px; color: #aaa; text-align: center;">Sent via SendGrid</p>
                 </div>
             `,
-        });
+        };
 
-        if (error) {
-            console.error('Resend API error:', error);
-            throw new Error(`Failed to send email: ${error.message}`);
-        }
-
-        console.log('OTP email sent successfully via Resend. ID:', data.id);
+        await sgMail.send(msg);
+        console.log('OTP email sent successfully via SendGrid.');
     } catch (error) {
         console.error('Error sending OTP email:', error.message);
+        if (error.response && error.response.body) {
+            console.error('SendGrid error body:', JSON.stringify(error.response.body));
+        }
         throw new Error(`Failed to send email: ${error.message}`);
     }
 };
