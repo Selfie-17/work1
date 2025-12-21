@@ -336,8 +336,7 @@ export default function Toolbar({
     onPrint,
     onExport,
     onSearch,
-    onTogglePreview,
-    isPreviewMode,
+    onMediaTrigger,
     onTransformCase,
     onInsertDate,
     stats = { words: 0, chars: 0 }
@@ -356,7 +355,7 @@ export default function Toolbar({
     }, []);
 
     return (
-        <div className={`pro-toolbar-container ${isPreviewMode ? 'preview-active' : ''}`}>
+        <div className="pro-toolbar-container">
             {/* Row 1: Formatting focus */}
             <div className="toolbar-row row-1">
                 <Group>
@@ -407,34 +406,21 @@ export default function Toolbar({
                 </Group>
 
                 <Group>
-                    <Btn icon={<Icons.Link />} onClick={() => { const u = prompt("URL"); if (u) onCommand("createLink", u); }} title="Link" />
+                    <Btn icon={<Icons.Link />} onClick={() => onMediaTrigger('link')} title="Link" />
                     <SymbolPicker onSelect={s => onCommand("insertHTML", s)} />
                     <TablePicker onInsert={val => onCommand("insertTable", val)} />
-                    <Btn icon={<Icons.Image />} onClick={() => {
-                        const u = prompt("Image URL");
-                        if (u) {
-                            const transformedUrl = transformImageUrl(u);
-                            onCommand("insertHTML", `<img src="${transformedUrl}" style="width: 50%; height: auto;"/>`);
-                        }
-                    }} title="Image" />
-                    <Btn icon={<Icons.Video />} onClick={() => {
-                        const u = prompt("Video URL (YouTube Embed Link):");
-                        if (u) {
-                            const embedUrl = u.replace("watch?v=", "embed/");
-                            onCommand("insertHTML", `<iframe src="${embedUrl}" width="100%" height="400" frameborder="0" allowfullscreen></iframe>`);
-                        }
-                    }} title="Video" />
+                    <Btn icon={<Icons.Image />} onClick={() => onMediaTrigger('image')} title="Image" />
+                    <Btn icon={<Icons.Video />} onClick={() => onMediaTrigger('video')} title="Video" />
                 </Group>
 
                 <Group>
-                    <select className="style-select" onChange={(e) => onCommand("formatBlock", e.target.value)} defaultValue="p" disabled={isPreviewMode}>
+                    <select className="style-select" onChange={(e) => onCommand("formatBlock", e.target.value)} defaultValue="p">
                         <option value="p">Paragraph</option>
                         <option value="h1">Heading 1</option>
                         <option value="h2">Heading 2</option>
                         <option value="h3">Heading 3</option>
                     </select>
                     <Btn icon={<Icons.Code />} onClick={() => onCommand("insertHTML", "<pre><code>\n\n</code></pre>")} title="Code Block" />
-                    <Btn icon={<Icons.Eye />} onClick={onTogglePreview} active={isPreviewMode} title="Preview Mode" />
                 </Group>
 
                 <div className="toolbar-spacer" />

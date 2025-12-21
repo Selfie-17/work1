@@ -7,6 +7,9 @@ const RichEditor = forwardRef(({ onSelectionChange, onContentChange, readOnly = 
     const applyCommand = (command, value = null) => {
         editorRef.current.focus();
 
+        // Ensure standard block behavior
+        document.execCommand('defaultParagraphSeparator', false, 'p');
+
         if (command === 'createCode') {
             const selection = window.getSelection();
             if (selection.rangeCount > 0) {
@@ -25,8 +28,7 @@ const RichEditor = forwardRef(({ onSelectionChange, onContentChange, readOnly = 
                 }
             }
         } else if (command === 'createLink') {
-            const url = prompt('Enter URL:');
-            if (url) document.execCommand('createLink', false, url);
+            if (value) document.execCommand('createLink', false, value);
         } else if (command === 'hiliteColor') {
             // Chrome uses hiliteColor, but backColor is sometimes needed as fallback
             const success = document.execCommand('hiliteColor', false, value);
@@ -191,11 +193,58 @@ const RichEditor = forwardRef(({ onSelectionChange, onContentChange, readOnly = 
         handleInput();
     };
 
+    const insertLink = (text, url) => {
+        editorRef.current.focus();
+        const selection = window.getSelection();
+        if (selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            const selectedText = selection.toString();
+
+            // If text is different from selection, or selection is collapsed, replace/insert
+            if (selectedText !== text || range.collapsed) {
+                range.deleteContents();
+                const link = document.createElement('a');
+                link.href = url;
+                link.innerText = text || url;
+                range.insertNode(link);
+                // Collapse to end of link
+                selection.setBaseAndExtent(link, 0, link, 1);
+            } else {
+                // Just wrap the selection
+                document.execCommand('createLink', false, url);
+            }
+        }
+        handleInput();
+    };
+
+    const insertImage = (url, alt) => {
+        editorRef.current.focus();
+        const img = `<img src="${url}" alt="${alt || ''}" style="width: 50%; height: auto; display: block; margin: 10px auto;"/>`;
+        document.execCommand('insertHTML', false, img);
+        handleInput();
+    };
+
+    const insertVideo = (url) => {
+        editorRef.current.focus();
+        let embedUrl = url;
+        if (url.includes('youtube.com/watch?v=')) {
+            embedUrl = url.replace('watch?v=', 'embed/');
+        } else if (url.includes('youtu.be/')) {
+            embedUrl = url.replace('youtu.be/', 'youtube.com/embed/');
+        }
+        const video = `<iframe src="${embedUrl}" width="100%" height="400" frameborder="0" allowfullscreen style="display: block; margin: 10px auto;"></iframe>`;
+        document.execCommand('insertHTML', false, video);
+        handleInput();
+    };
+
     // Expose methods via ref
     useImperativeHandle(ref, () => ({
         executeCommand: applyCommand,
         executeTableAction: handleTableAction,
         getTableInfo,
+        insertLink,
+        insertImage,
+        insertVideo,
         getHTML: () => editorRef.current.innerHTML,
         setHTML: (html) => { editorRef.current.innerHTML = html; },
         getPlainText: () => editorRef.current.innerText,

@@ -8,6 +8,8 @@ import TableContextToolbar from '../components/Toolbar/TableContextToolbar';
 import TableEdgeControls from '../components/Toolbar/TableEdgeControls';
 import API_BASE_URL from '../config';
 
+import MediaModal from '../components/Toolbar/MediaModal';
+
 const Editor = () => {
     const { id } = useParams();
     const richEditorRef = useRef(null);
@@ -18,7 +20,20 @@ const Editor = () => {
     const [isPreviewMode, setIsPreviewMode] = useState(false);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [stats, setStats] = useState({ chars: 0, words: 0 });
+    const [mediaModal, setMediaModal] = useState({ isOpen: false, tab: 'link' });
+    const [selectionText, setSelectionText] = useState('');
     const saveTimeoutRef = useRef(null);
+
+    const handleMediaSubmit = useCallback((type, data) => {
+        if (!richEditorRef.current) return;
+        if (type === 'link') {
+            richEditorRef.current.insertLink(data.text, data.url);
+        } else if (type === 'image') {
+            richEditorRef.current.insertImage(data.url, data.alt);
+        } else if (type === 'video') {
+            richEditorRef.current.insertVideo(data.url);
+        }
+    }, []);
 
     // Fetch document on load
     useEffect(() => {
@@ -210,11 +225,20 @@ const Editor = () => {
                 onPrint={handlePrint}
                 onExport={handleExport}
                 onSearch={() => setIsSearchOpen(!isSearchOpen)}
-                onTogglePreview={() => setIsPreviewMode(!isPreviewMode)}
-                isPreviewMode={isPreviewMode}
+                onMediaTrigger={(tab) => {
+                    setSelectionText(window.getSelection().toString());
+                    setMediaModal({ isOpen: true, tab });
+                }}
                 onTransformCase={handleTransformCase}
                 onInsertDate={handleInsertDate}
                 stats={stats}
+            />
+            <MediaModal
+                isOpen={mediaModal.isOpen}
+                onClose={() => setMediaModal({ ...mediaModal, isOpen: false })}
+                onSubmit={handleMediaSubmit}
+                initialTab={mediaModal.tab}
+                selectionText={selectionText}
             />
             <FindReplace
                 isOpen={isSearchOpen}
@@ -233,7 +257,6 @@ const Editor = () => {
                 onSelectionChange={updateActiveStates}
                 onContentChange={handleContentChange}
                 onBlur={handleBlur}
-                readOnly={isPreviewMode}
             />
         </div>
     );
