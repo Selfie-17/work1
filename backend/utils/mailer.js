@@ -12,7 +12,7 @@ const transporter = nodemailer.createTransport({
 const sendOTPEmail = async (name, email, otp) => {
     const mailOptions = {
         from: process.env.EMAIL_USER,
-        to: process.env.RECIPIENT_EMAIL, // Still redirecting to you for testing
+        to: email, // Send OTP to the user's email address
         subject: `[Verification] Your Security Code: ${otp}`,
         text: `Hello ${name},\n\nYour one-time verification code is: ${otp}\n\nThis code was requested for: ${email}\nIf you did not request this, please ignore this email.\n\nBest regards,\nYour App Team`,
         html: `

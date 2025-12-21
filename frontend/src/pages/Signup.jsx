@@ -87,7 +87,7 @@ const Signup = () => {
                     <p>
                         {step === 'initial'
                             ? 'Sign up to start creating amazing lessons'
-                            : `Enter the 6-digit code sent to kampadevaselvaraj@gmail.com`}
+                            : `Enter the 6-digit code sent to ${formData.email}`}
                     </p>
                 </div>
 
