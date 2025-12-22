@@ -430,5 +430,113 @@ app.post('/api/docs/import', async (req, res) => {
     }
 });
 
+// --- Student Published Documents Routes ---
+
+// Get all published documents and folders (public - no auth required)
+app.get('/api/published', async (req, res) => {
+    try {
+        const docs = await Document.find({ isPublished: true })
+            .select('_id title updatedAt folder')
+            .sort({ updatedAt: -1 });
+
+        const folders = await Folder.find({ isPublished: true })
+            .select('_id name createdAt')
+            .sort({ name: 1 });
+
+        res.status(200).json({ documents: docs, folders: folders });
+    } catch (error) {
+        console.error('Error fetching published content:', error);
+        res.status(500).json({ message: 'Error fetching published content' });
+    }
+});
+
+// Get documents in a published folder (for students)
+app.get('/api/published/folder/:id', async (req, res) => {
+    try {
+        const folder = await Folder.findById(req.params.id);
+        if (!folder || !folder.isPublished) {
+            return res.status(404).json({ message: 'Folder not found or not published' });
+        }
+
+        const docs = await Document.find({ folder: req.params.id })
+            .select('_id title updatedAt')
+            .sort({ title: 1 });
+
+        res.status(200).json({ folder, documents: docs });
+    } catch (error) {
+        console.error('Error fetching folder documents:', error);
+        res.status(500).json({ message: 'Error fetching folder documents' });
+    }
+});
+
+// Get document content for students (public read-only)
+app.get('/api/documents/:id', async (req, res) => {
+    try {
+        const doc = await Document.findById(req.params.id);
+        if (!doc) return res.status(404).json({ message: 'Document not found' });
+
+        // Return the HTML content from markdown
+        const htmlContent = markdownToHtml(doc.markdown);
+        res.status(200).json({
+            _id: doc._id,
+            title: doc.title,
+            htmlContent,
+            updatedAt: doc.updatedAt
+        });
+    } catch (error) {
+        console.error('Error fetching document for student:', error);
+        res.status(500).json({ message: 'Error fetching document' });
+    }
+});
+
+// Toggle publish status for document
+app.patch('/api/docs/:id/publish', async (req, res) => {
+    try {
+        const doc = await Document.findById(req.params.id);
+        if (!doc) return res.status(404).json({ message: 'Document not found' });
+
+        doc.isPublished = !doc.isPublished;
+        await doc.save();
+
+        res.status(200).json({
+            message: doc.isPublished ? 'Document published' : 'Document unpublished',
+            isPublished: doc.isPublished
+        });
+    } catch (error) {
+        console.error('Error toggling publish:', error);
+        res.status(500).json({ message: 'Error toggling publish status' });
+    }
+});
+
+// Toggle publish status for folder (publishes folder AND all docs inside)
+app.patch('/api/folders/:id/publish', async (req, res) => {
+    try {
+        const folder = await Folder.findById(req.params.id);
+        if (!folder) return res.status(404).json({ message: 'Folder not found' });
+
+        folder.isPublished = !folder.isPublished;
+        await folder.save();
+
+        // Also update all documents in this folder
+        await Document.updateMany(
+            { folder: req.params.id },
+            { isPublished: folder.isPublished }
+        );
+
+        const updatedDocs = await Document.find({ folder: req.params.id });
+
+        res.status(200).json({
+            message: folder.isPublished ? 'Folder published' : 'Folder unpublished',
+            isPublished: folder.isPublished,
+            documentsUpdated: updatedDocs.length
+        });
+    } catch (error) {
+        console.error('Error toggling folder publish:', error);
+        res.status(500).json({ message: 'Error toggling folder publish status' });
+    }
+});
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+

@@ -7,6 +7,7 @@ const DocumentSchema = new mongoose.Schema({
     author: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     folder: { type: mongoose.Schema.Types.ObjectId, ref: 'Folder' },
     status: { type: String, enum: ['draft', 'pending', 'approved'], default: 'draft' },
+    isPublished: { type: Boolean, default: false }, // For student visibility
     githubUrl: { type: String }, // Reference to original GitHub file
     updatedAt: { type: Date, default: Date.now }
 });

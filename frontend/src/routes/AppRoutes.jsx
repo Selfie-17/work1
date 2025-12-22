@@ -5,6 +5,7 @@ import Signup from '../pages/Signup';
 import Dashboard from '../pages/Dashboard';
 import Editor from '../pages/Editor';
 import ImageEditorPage from '../pages/ImageEditorPage';
+import StudentView from '../pages/StudentView';
 
 const AppRoutes = () => {
     return (
@@ -15,9 +16,11 @@ const AppRoutes = () => {
             <Route path="/editor" element={<Editor />} />
             <Route path="/editor/:id" element={<Editor />} />
             <Route path="/image-editor" element={<ImageEditorPage />} />
+            <Route path="/student" element={<StudentView />} />
             <Route path="/" element={<Navigate to="/login" replace />} />
         </Routes>
     );
 };
 
 export default AppRoutes;
+

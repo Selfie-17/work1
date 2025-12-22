@@ -93,6 +93,16 @@ const Login = () => {
 
                 <div className="login-footer">
                     <p>Don't have an account? <Link to="/signup">Sign up</Link></p>
+                    <div className="student-login-divider">
+                        <span>or</span>
+                    </div>
+                    <button
+                        type="button"
+                        className="student-login-btn"
+                        onClick={() => navigate('/student')}
+                    >
+                        📚 Login as Student
+                    </button>
                 </div>
             </div>
         </div>

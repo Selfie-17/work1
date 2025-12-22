@@ -201,6 +201,47 @@ const Dashboard = () => {
         }
     };
 
+    const handlePublish = async (id, e) => {
+        e.stopPropagation();
+        try {
+            const response = await fetch(`${API_BASE_URL}/docs/${id}/publish`, {
+                method: 'PATCH'
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setDocuments(prevDocs =>
+                    prevDocs.map(doc =>
+                        doc._id === id ? { ...doc, isPublished: data.isPublished } : doc
+                    )
+                );
+            }
+        } catch (err) {
+            console.error('Failed to toggle publish:', err);
+        }
+    };
+
+    const handlePublishFolder = async (id, e) => {
+        e.stopPropagation();
+        try {
+            const response = await fetch(`${API_BASE_URL}/folders/${id}/publish`, {
+                method: 'PATCH'
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setFolders(prevFolders =>
+                    prevFolders.map(folder =>
+                        folder._id === id ? { ...folder, isPublished: data.isPublished } : folder
+                    )
+                );
+                // Refresh documents to reflect changes
+                fetchDocuments(folderIdParam);
+                alert(data.message + ` (${data.documentsUpdated} documents updated)`);
+            }
+        } catch (err) {
+            console.error('Failed to toggle folder publish:', err);
+        }
+    };
+
     const formatDate = (dateString) => {
         const options = { year: 'numeric', month: 'short', day: 'numeric' };
         return new Date(dateString).toLocaleDateString(undefined, options);
@@ -266,11 +307,12 @@ const Dashboard = () => {
                         {filteredFolders.map((folder) => (
                             <div
                                 key={folder._id}
-                                className="doc-card folder-card"
+                                className={`doc-card folder-card ${folder.isPublished ? 'published' : ''}`}
                                 onClick={() => navigate(`/editor?folder=${folder._id}`)}
                             >
                                 <div className="doc-card-header">
                                     <div className="doc-icon">📁</div>
+                                    {folder.isPublished && <span className="published-badge" title="Published to students">📢</span>}
                                     <button
                                         className="doc-close"
                                         onClick={(e) => handleDeleteFolder(folder._id, e)}
@@ -281,7 +323,14 @@ const Dashboard = () => {
                                 <h3 className="doc-title">{folder.name}</h3>
                                 <p className="doc-meta">Folder</p>
                                 <div className="doc-footer">
-                                    <span className="doc-action">Open folder →</span>
+                                    <button
+                                        className={`publish-btn ${folder.isPublished ? 'unpublish' : ''}`}
+                                        onClick={(e) => handlePublishFolder(folder._id, e)}
+                                        title={folder.isPublished ? 'Unpublish folder' : 'Publish folder & all docs'}
+                                    >
+                                        {folder.isPublished ? '🔒 Unpublish' : '📢 Publish All'}
+                                    </button>
+                                    <span className="doc-action">Open →</span>
                                 </div>
                             </div>
                         ))}
@@ -290,11 +339,12 @@ const Dashboard = () => {
                         {filteredDocs.map((doc) => (
                             <div
                                 key={doc._id}
-                                className="doc-card"
+                                className={`doc-card ${doc.isPublished ? 'published' : ''}`}
                                 onClick={() => navigate(`/editor/${doc._id}`)}
                             >
                                 <div className="doc-card-header">
                                     <div className="doc-icon">📄</div>
+                                    {doc.isPublished && <span className="published-badge" title="Published to students">📢</span>}
                                     <button
                                         className="doc-close"
                                         title="Delete"
@@ -307,7 +357,14 @@ const Dashboard = () => {
                                 <p className="doc-meta">Edited {formatDate(doc.updatedAt)}</p>
 
                                 <div className="doc-footer">
-                                    <span className="doc-action">Open editor →</span>
+                                    <button
+                                        className={`publish-btn ${doc.isPublished ? 'unpublish' : ''}`}
+                                        onClick={(e) => handlePublish(doc._id, e)}
+                                        title={doc.isPublished ? 'Unpublish from students' : 'Publish to students'}
+                                    >
+                                        {doc.isPublished ? '🔒 Unpublish' : '📢 Publish'}
+                                    </button>
+                                    <span className="doc-action">Open →</span>
                                 </div>
                             </div>
                         ))}
