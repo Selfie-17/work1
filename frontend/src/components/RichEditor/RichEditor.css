@@ -32,16 +32,20 @@
     font-size: 2rem;
     border-bottom: 2px solid #e5e7eb;
     padding-bottom: 6px;
+    color: #2563eb;
 }
 
 .editable-area h2 {
     font-size: 1.5rem;
     border-bottom: 1px solid #e5e7eb;
     padding-bottom: 4px;
+    color: #2563eb;
 }
 
 .editable-area h3 {
     font-size: 1.25rem;
+    color: #2563eb;
+    margin-top: 32px;
 }
 
 /* ===== Paragraphs ===== */
@@ -90,19 +94,20 @@
 
 /* ===== Blockquotes ===== */
 .editable-area blockquote {
-    border-left: 4px solid #d1d5db;
+    border-left: 4px solid #3b82f6;
     padding-left: 16px;
     margin: 16px 0;
-    color: #4b5563;
-    background: #f9fafb;
+    color: #374151;
+    background: transparent;
+    font-style: italic;
 }
 
 /* ===== Inline Code ===== */
 .editable-area code {
     background-color: #f3f4f6;
     /* soft gray */
-    color: #111827;
-    /* near-black */
+    color: #dc2626;
+    /* Red text */
     padding: 2px 6px;
     border-radius: 4px;
     font-family: "Fira Code", Consolas, monospace;
