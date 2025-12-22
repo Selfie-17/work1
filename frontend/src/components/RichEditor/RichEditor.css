@@ -18,6 +18,7 @@
     /* A4-ish height */
     display: flex;
     flex-direction: column;
+    position: relative; /* Added for ImageTransformLayer */
 }
 
 .editable-area {

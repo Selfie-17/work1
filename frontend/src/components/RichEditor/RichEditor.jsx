@@ -1,83 +1,102 @@
-// --- 2D Array Model-Based Table Helpers ---
+// Table helpers moved to TableOperations.js
 
-// Convert a table DOM element to a 2D array model
-// Each cell stores: { html: string, isHeader: boolean }
-const tableToModel = (table) => {
-    const model = [];
-    Array.from(table.rows).forEach(row => {
-        const rowData = [];
-        Array.from(row.cells).forEach(cell => {
-            rowData.push({
-                html: cell.innerHTML,
-                isHeader: cell.tagName === 'TH'
-            });
-        });
-        model.push(rowData);
-    });
-    return model;
-};
+import 'katex/dist/katex.min.css';
+import katex from 'katex';
 
-// Convert a 2D array model back to table HTML and replace the table's content
-const modelToTable = (table, model) => {
-    if (!model || model.length === 0) return;
-
-    // Get table attributes to preserve
-    const border = table.getAttribute('border') || '1';
-    const style = table.getAttribute('style') || 'width:100%; border-collapse: collapse;';
-
-    // Clear existing rows
-    while (table.rows.length > 0) {
-        table.deleteRow(0);
-    }
-
-    // Rebuild from model
-    model.forEach(rowData => {
-        const tr = table.insertRow();
-        rowData.forEach(cellData => {
-            const cell = document.createElement(cellData.isHeader ? 'TH' : 'TD');
-            cell.innerHTML = cellData.html || '&nbsp;';
-            tr.appendChild(cell);
-        });
-    });
-
-    // Restore attributes
-    table.setAttribute('border', border);
-    table.setAttribute('style', style);
-};
-
-// Create an empty cell object
-const createEmptyCell = (isHeader = false) => ({
-    html: '&nbsp;',
-    isHeader
-});
-
-// Get number of columns from model
-const getModelColumnCount = (model) => {
-    if (!model || model.length === 0) return 0;
-    return Math.max(...model.map(row => row.length));
-};
-
-// Ensure all rows in model have the same number of columns
-const normalizeModel = (model, targetCols = null) => {
-    const colCount = targetCols !== null ? targetCols : getModelColumnCount(model);
-    return model.map(row => {
-        const newRow = [...row];
-        while (newRow.length < colCount) {
-            newRow.push(createEmptyCell(row[0]?.isHeader || false));
-        }
-        while (newRow.length > colCount) {
-            newRow.pop();
-        }
-        return newRow;
-    });
-};
-
-import React, { useRef, useImperativeHandle, forwardRef, useEffect } from 'react';
+import React, { useRef, useImperativeHandle, forwardRef, useEffect, useState } from 'react';
 import './RichEditor.css';
+import { useTableSelection } from './Table/useTableSelection';
+import { useTableResize } from './Table/useTableResize';
+import { useTableOperations } from './Table/useTableOperations';
+import TableOverlay from './Table/TableOverlay';
+import InlineImageEditor from './InlineImageEditor';
+
+const transformTextNodes = (node) => {
+    if (node.nodeType === 3) { // Text node
+        const text = node.textContent;
+        // Regex for $$...$$ (Display) or $...$ (Inline)
+        // We use a combined regex. 
+        // Note: Inline math usually shouldn't span multiple lines, but we allow it for flexibility.
+        const regex = /\$\$([\s\S]+?)\$\$|\$([^$]+)\$/g;
+
+        if (regex.test(text)) {
+            const fragment = document.createDocumentFragment();
+            let lastIndex = 0;
+
+            text.replace(regex, (match, displayFormula, inlineFormula, offset) => {
+                const formula = displayFormula || inlineFormula;
+                const isDisplay = !!displayFormula;
+
+                // Add text before math
+                if (offset > lastIndex) {
+                    fragment.appendChild(document.createTextNode(text.slice(lastIndex, offset)));
+                }
+
+                // Render Math
+                const span = document.createElement('span');
+                span.contentEditable = "false";
+                span.className = "math-formula-rendered";
+                span.dataset.latex = formula;
+                span.dataset.display = isDisplay;
+                span.title = "Click to edit";
+                span.style.cursor = "pointer";
+                span.style.padding = "0 2px";
+                if (isDisplay) {
+                    span.style.display = "block";
+                    span.style.textAlign = "center";
+                    span.style.margin = "1em 0";
+                }
+
+                try {
+                    katex.render(formula, span, {
+                        throwOnError: false,
+                        displayMode: isDisplay
+                    });
+                } catch (e) {
+                    console.error("Katex Error:", e);
+                    span.textContent = match;
+                }
+
+                // Add click listener to revert
+                span.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    // Revert to text
+                    const delimiter = isDisplay ? '$$' : '$';
+                    const textNode = document.createTextNode(`${delimiter}${formula}${delimiter}`);
+                    span.parentNode.replaceChild(textNode, span);
+                });
+
+                fragment.appendChild(span);
+
+                lastIndex = offset + match.length;
+            });
+
+            // Add remaining text
+            if (lastIndex < text.length) {
+                fragment.appendChild(document.createTextNode(text.slice(lastIndex)));
+            }
+
+            node.parentNode.replaceChild(fragment, node);
+            return true; // Found match
+        }
+    } else if (node.nodeType === 1 && node.nodeName !== 'SCRIPT' && node.nodeName !== 'STYLE' && !node.classList.contains('math-formula-rendered')) {
+        let found = false;
+        Array.from(node.childNodes).forEach(child => {
+            if (transformTextNodes(child)) found = true;
+        });
+        return found;
+    }
+    return false;
+};
 
 const RichEditor = forwardRef(({ onSelectionChange, onContentChange, readOnly = false }, ref) => {
     const editorRef = useRef(null);
+    const canvasRef = useRef(null);
     const savedRangeRef = useRef(null);
+    const [selectedImage, setSelectedImage] = useState(null);
+    const { selection: tableSelection, handleMouseDown: onTableMouseDown, handleMouseMove: onTableMouseMove, handleMouseUp: onTableMouseUp } = useTableSelection(editorRef);
+    const { resizeState, handleMouseDown: onTableResizeDown, handleMouseMove: onTableResizeMove } = useTableResize(editorRef);
+    const { executeAction } = useTableOperations(editorRef);
 
     // Selection save/restore logic
     const saveSelection = () => {
@@ -177,6 +196,11 @@ const RichEditor = forwardRef(({ onSelectionChange, onContentChange, readOnly = 
             } else {
                 document.execCommand('insertHTML', false, value);
             }
+        } else if (command === 'formatMath') {
+            if (editorRef.current) {
+                editorRef.current.normalize();
+                transformTextNodes(editorRef.current);
+            }
         } else {
             document.execCommand(command, false, value);
         }
@@ -202,6 +226,34 @@ const RichEditor = forwardRef(({ onSelectionChange, onContentChange, readOnly = 
     };
 
     const getTableInfo = () => {
+        // Use multi-selection if available
+        if (tableSelection && tableSelection.selectedCells.length > 0) {
+            const cells = tableSelection.selectedCells;
+            const firstCell = cells[0];
+            const table = firstCell.closest('table');
+
+            // Calculate bounding box of all selected cells
+            const rects = cells.map(c => c.getBoundingClientRect());
+            const minTop = Math.min(...rects.map(r => r.top));
+            const minLeft = Math.min(...rects.map(r => r.left));
+            const maxRight = Math.max(...rects.map(r => r.right));
+            const maxBottom = Math.max(...rects.map(r => r.bottom));
+
+            return {
+                table,
+                cell: firstCell,
+                rowIndex: -1, // Context is selection, not single cell
+                colIndex: -1,
+                rect: {
+                    top: minTop,
+                    left: minLeft,
+                    width: maxRight - minLeft,
+                    height: maxBottom - minTop
+                }
+            };
+        }
+
+        // Fallback to single cell selection (cursor)
         const cell = getSelectedTableCell();
         if (!cell) return null;
         const table = cell.closest('table');
@@ -211,137 +263,56 @@ const RichEditor = forwardRef(({ onSelectionChange, onContentChange, readOnly = 
         const rowIndex = Array.from(table.rows).indexOf(row);
         const colIndex = Array.from(row.cells).indexOf(cell);
 
-        const rect = table.getBoundingClientRect();
+        const rect = table.getBoundingClientRect(); // Default to table rect if single cell? Or cell rect?
+        // Original code used table rect, but for context menu it causes jump.
+        // Let's us cell rect for single selection too?
+        // Actually, existing behavior was table rect. Let's keep it if user liked it, 
+        // OR better: use cell rect for consistency. 
+        // The screenshot shows toolbar above the *selection*.
+
+        const cellRect = cell.getBoundingClientRect();
+
         return {
             table,
             cell,
             rowIndex,
             colIndex,
             rect: {
-                top: rect.top,
-                left: rect.left,
-                width: rect.width,
-                height: rect.height
+                top: cellRect.top,
+                left: cellRect.left,
+                width: cellRect.width,
+                height: cellRect.height
             }
         };
     };
 
-    const handleTableAction = (action, value, targetTable = null, targetRowIndex = -1, targetColIndex = -1) => {
-        let cell = getSelectedTableCell();
-        let table = targetTable || (cell ? cell.closest('table') : null);
+    const handleTableAction = (action, value, targetTable = null) => {
+        const cell = getSelectedTableCell();
+        const table = targetTable || (cell ? cell.closest('table') : null) || tableSelection.startCell?.table;
         if (!table) return;
 
-        // Use passed indices if available, otherwise fallback to selection
-        let rowIndex = targetRowIndex !== -1 ? targetRowIndex : (cell ? Array.from(table.rows).indexOf(cell.parentNode) : 0);
-        let colIndex = targetColIndex !== -1 ? targetColIndex : (cell ? Array.from(cell.parentNode.cells).indexOf(cell) : 0);
+        // Grid operations handled by hook
+        if (['addRowAbove', 'addRowBelow', 'addColLeft', 'addColRight', 'deleteRow', 'deleteCol', 'deleteTable', 'mergeCells', 'splitCell'].includes(action)) {
+            executeAction(action, table, tableSelection);
+            saveSelection(); // Selection might be lost after rebuild
+            return;
+        }
 
-        // Convert table to 2D model for manipulation
-        let model = tableToModel(table);
-        const colCount = getModelColumnCount(model);
-
+        // Style operations handled locally
         switch (action) {
-            case 'addRowAbove':
-            case 'addRowBelow': {
-                // Create a new row with empty cells matching the column count
-                const isHeader = model[rowIndex]?.[0]?.isHeader || false;
-                const newRow = Array(colCount).fill(null).map(() => createEmptyCell(false));
-                const insertIndex = action === 'addRowAbove' ? rowIndex : rowIndex + 1;
-                model.splice(insertIndex, 0, newRow);
-                model = normalizeModel(model);
-                modelToTable(table, model);
-                break;
-            }
-            case 'deleteRow': {
-                if (model.length > 1 && rowIndex >= 0 && rowIndex < model.length) {
-                    model.splice(rowIndex, 1);
-                    model = normalizeModel(model);
-                    modelToTable(table, model);
-                } else if (model.length === 1) {
-                    table.remove();
-                }
-                break;
-            }
-            case 'addColLeft':
-            case 'addColRight': {
-                const insertIdx = action === 'addColLeft' ? colIndex : colIndex + 1;
-                model = model.map(row => {
-                    const newRow = [...row];
-                    const isHeader = row[0]?.isHeader || false;
-                    newRow.splice(insertIdx, 0, createEmptyCell(isHeader));
-                    return newRow;
-                });
-                model = normalizeModel(model);
-                modelToTable(table, model);
-                break;
-            }
-            case 'deleteCol': {
-                if (colCount <= 1) {
-                    table.remove();
-                    break;
-                }
-                if (colIndex >= 0 && colIndex < colCount) {
-                    model = model.map(row => {
-                        const newRow = [...row];
-                        if (colIndex < newRow.length) {
-                            newRow.splice(colIndex, 1);
-                        }
-                        return newRow;
-                    });
-                    model = normalizeModel(model);
-                    modelToTable(table, model);
-                }
-                break;
-            }
-            case 'mergeCells': {
-                // Merge current cell with the next cell in the same row
-                if (colIndex >= 0 && colIndex < colCount - 1 && rowIndex >= 0 && rowIndex < model.length) {
-                    const currentCell = model[rowIndex][colIndex];
-                    const nextCell = model[rowIndex][colIndex + 1];
-                    if (currentCell && nextCell) {
-                        currentCell.html = (currentCell.html || '') + (nextCell.html || '');
-                        model[rowIndex].splice(colIndex + 1, 1);
-                    }
-                    model = normalizeModel(model);
-                    modelToTable(table, model);
-                }
-                break;
-            }
-            case 'splitCell': {
-                // Split current cell into two cells
-                if (colIndex >= 0 && rowIndex >= 0 && rowIndex < model.length) {
-                    const isHeader = model[rowIndex][colIndex]?.isHeader || false;
-                    model[rowIndex].splice(colIndex + 1, 0, createEmptyCell(isHeader));
-                    model = normalizeModel(model);
-                    modelToTable(table, model);
-                }
-                break;
-            }
-            case 'deleteTable':
-                table.remove();
-                break;
             case 'setCellBackground':
                 if (cell) cell.style.backgroundColor = value;
                 break;
             case 'setCellVAlign':
                 if (cell) cell.style.verticalAlign = value || "middle";
                 break;
-            case 'toggleHeaderRow': {
-                if (rowIndex >= 0 && rowIndex < model.length) {
-                    const isCurrentlyHeader = model[rowIndex][0]?.isHeader || false;
-                    model[rowIndex] = model[rowIndex].map(cell => ({
-                        ...cell,
-                        isHeader: !isCurrentlyHeader
-                    }));
-                    modelToTable(table, model);
-                }
-                break;
-            }
             case 'setTableBorders':
                 table.style.borderCollapse = 'collapse';
                 table.style.border = value;
                 Array.from(table.getElementsByTagName('td')).forEach(td => td.style.border = value);
                 Array.from(table.getElementsByTagName('th')).forEach(th => th.style.border = value);
                 break;
+            // toggleHeaderRow excluded for now as it affects grid structure, should move to operations if needed
             default: break;
         }
         handleInput();
@@ -376,7 +347,8 @@ const RichEditor = forwardRef(({ onSelectionChange, onContentChange, readOnly = 
         const img = document.createElement('img');
         img.src = url;
         img.alt = alt || '';
-        img.style.width = '50%';
+        img.style.width = '300px';
+        img.style.maxWidth = '100%';
         img.style.height = 'auto';
         img.style.display = 'block';
         img.style.margin = '10px auto';
@@ -474,6 +446,12 @@ const RichEditor = forwardRef(({ onSelectionChange, onContentChange, readOnly = 
 
     // Handle link clicks - Ctrl+Click opens in new tab
     const handleClick = (e) => {
+        // Prevent parent navigation/links when interacting with table
+        if (e.target.closest('td, th, table, .table-selection-overlay')) {
+            e.stopPropagation();
+            return;
+        }
+
         const link = e.target.closest('a');
         if (link && (e.ctrlKey || e.metaKey)) {
             e.preventDefault();
@@ -489,15 +467,48 @@ const RichEditor = forwardRef(({ onSelectionChange, onContentChange, readOnly = 
         // Tab support
         if (e.key === 'Tab') {
             e.preventDefault();
+            const cell = getSelectedTableCell();
+            if (cell) {
+                const table = cell.closest('table');
+                const cells = Array.from(table.getElementsByTagName('td')); // And th?
+                const allCells = Array.from(table.querySelectorAll('td, th'));
+                const currentIndex = allCells.indexOf(cell);
+
+                if (e.shiftKey) {
+                    // Previous
+                    if (currentIndex > 0) {
+                        const prev = allCells[currentIndex - 1];
+                        const range = document.createRange();
+                        range.selectNodeContents(prev);
+                        range.collapse(true); // Start?
+                        const sel = window.getSelection();
+                        sel.removeAllRanges();
+                        sel.addRange(range);
+                    }
+                } else {
+                    // Next
+                    if (currentIndex < allCells.length - 1) {
+                        const next = allCells[currentIndex + 1];
+                        const range = document.createRange();
+                        range.selectNodeContents(next);
+                        range.collapse(true);
+                        const sel = window.getSelection();
+                        sel.removeAllRanges();
+                        sel.addRange(range);
+                    } else {
+                        // Insert new row if at end?
+                        handleTableAction('addRowBelow', null, table);
+                    }
+                }
+                return;
+            }
             document.execCommand('insertHTML', false, '&nbsp;&nbsp;&nbsp;&nbsp;');
         }
 
         // Hotkeys
         if (e.ctrlKey) {
             if (e.key === 'b') {
-                // Browser handles Bold usually, but we can call it here for consistency
-                // e.preventDefault(); 
-                // document.execCommand('bold');
+                // Browser handles Bold usually
             } else if (e.key === '`') {
                 e.preventDefault();
                 applyCommand('createCode');
@@ -508,24 +519,93 @@ const RichEditor = forwardRef(({ onSelectionChange, onContentChange, readOnly = 
         }
     };
 
+    // Native event listeners to override default browser behaviors (drag/drop/click links)
+    useEffect(() => {
+        const container = editorRef.current;
+        if (!container) return;
+
+        const handleNativeClick = (e) => {
+            if (e.target.tagName === 'IMG') {
+                // Stop everything and select the image
+                e.preventDefault();
+                e.stopPropagation();
+                setSelectedImage(e.target);
+            } else {
+                // If clicking background/text, deselect image if not clicking the editor ui
+                if (selectedImage && !container.contains(e.target)) {
+                    // This logic might conflict if clicking the overlay handles (which are separate divs)
+                    // The overlay handles interactions separately.
+                    // If we click text, we want to deselect.
+                    setSelectedImage(null);
+                }
+            }
+        };
+
+        const handleDragStart = (e) => {
+            if (e.target.tagName === 'IMG') {
+                e.preventDefault();
+                e.stopPropagation();
+                setSelectedImage(e.target);
+            }
+        };
+
+        // Aggressively capture clicks on images
+        container.addEventListener('click', handleNativeClick, true);
+        container.addEventListener('dragstart', handleDragStart, true);
+
+        return () => {
+            container.removeEventListener('click', handleNativeClick, true);
+            container.removeEventListener('dragstart', handleDragStart, true);
+        };
+    }, [selectedImage]);
+
     return (
         <div className="rich-editor-container">
-            <div className="document-canvas">
+            <div className="document-canvas" ref={canvasRef}>
                 <div
                     ref={editorRef}
                     className={`editable-area ${readOnly ? 'read-only' : ''}`}
                     contentEditable={!readOnly}
                     suppressContentEditableWarning={true}
                     onKeyUp={handleKeyUp}
-                    onMouseUp={handleMouseUp}
+
+                    onMouseUp={(e) => { handleMouseUp(e); onTableMouseUp(e); }}
+                    onMouseDown={(e) => {
+                        onTableResizeDown(e);
+                        // Prevent parent navigation/links when interacting with table
+                        if (e.target.closest('td, th')) {
+                            e.stopPropagation();
+                        }
+                        if (!e.defaultPrevented) onTableMouseDown(e);
+                    }}
+                    onMouseMove={(e) => {
+                        onTableResizeMove(e);
+                        onTableMouseMove(e);
+                    }}
                     onClick={handleClick}
                     onKeyDown={handleKeyDown}
                     onInput={handleInput}
                     placeholder="Start writing your lesson here..."
                 >
-                    <h1>Start writing your lesson here...</h1>
-                    <p>Select text and use the toolbar above to format your lesson. This editor supports basic rich text features and keyboard shortcuts like <b>Ctrl+B</b> and <i>Ctrl+I</i>.</p>
                 </div>
+                {/* Inline Image Editor - Rendered if an image is selected */}
+                {selectedImage && !readOnly && (
+                    <InlineImageEditor
+                        target={selectedImage}
+                        containerRef={canvasRef}
+                        onSave={() => {
+                            setSelectedImage(null);
+                            handleInput(); // Trigger save
+                        }}
+                        onCancel={() => setSelectedImage(null)}
+                    />
+                )}
+
+
+
+                {/* Table Selection Overlay */}
+                <TableOverlay selection={tableSelection} editorRef={editorRef} />
+
                 <div className="editor-footer">
                     <div className="footer-left">
                         <span className="tag-pill">&lt;p&gt;</span>

@@ -267,7 +267,7 @@ const Dashboard = () => {
                             <div
                                 key={folder._id}
                                 className="doc-card folder-card"
-                                onClick={() => handleNavigate(folder)}
+                                onClick={() => navigate(`/editor?folder=${folder._id}`)}
                             >
                                 <div className="doc-card-header">
                                     <div className="doc-icon">📁</div>
@@ -303,7 +303,6 @@ const Dashboard = () => {
                                         ×
                                     </button>
                                 </div>
-
                                 <h3 className="doc-title">{doc.title}</h3>
                                 <p className="doc-meta">Edited {formatDate(doc.updatedAt)}</p>
 

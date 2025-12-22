@@ -1,5 +1,5 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar/Navbar';
 import Toolbar from '../components/Toolbar/Toolbar';
 import RichEditor from '../components/RichEditor/RichEditor';
@@ -7,11 +7,23 @@ import FindReplace from '../components/FindReplace/FindReplace';
 import TableContextToolbar from '../components/Toolbar/TableContextToolbar';
 import TableEdgeControls from '../components/Toolbar/TableEdgeControls';
 import API_BASE_URL from '../config';
+import Sidebar from '../components/Sidebar/Sidebar';
 
 import MediaModal from '../components/Toolbar/MediaModal';
 
 const Editor = () => {
     const { id } = useParams();
+    const [searchParams] = useSearchParams();
+    const navigate = useNavigate();
+    const folderId = searchParams.get('folder');
+
+    // Ref to track the current active ID to prevent race conditions
+    const activeIdRef = useRef(id);
+
+    useEffect(() => {
+        activeIdRef.current = id;
+    }, [id]);
+
     const richEditorRef = useRef(null);
     const [activeStates, setActiveStates] = useState({});
     const [docTitle, setDocTitle] = useState('Loading...');
@@ -178,6 +190,10 @@ const Editor = () => {
 
             if (response.ok) {
                 const data = await response.json();
+
+                // Prevent race condition: If we navigated away, don't update state
+                if (activeIdRef.current !== id) return;
+
                 // Update title (in case it was auto-suffixed)
                 setDocTitle(data.title);
 
@@ -217,7 +233,21 @@ const Editor = () => {
         };
     }, []);
 
-    // Remove global selection save for toolbar; use RichEditor ref methods instead
+    // Sidebar File Open Handler
+    const handleFileOpen = useCallback((file) => {
+        // 1. Auto-save current document before switching
+        if (id) {
+            handleSave();
+        }
+
+        // 2. Navigate to new doc, PRESERVING folder context
+        // In real app use file.id. For mock, we use mock IDs.
+        // We probably need to map mock ID to real ID or just use mock ID in URL for demo.
+        navigate(`/editor/${file.id}?folder=${folderId || ''}`);
+
+    }, [handleSave, id, folderId, navigate]);
+
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
     return (
         <div className="editor-page">
@@ -230,57 +260,113 @@ const Editor = () => {
                 }}
                 isSaving={isSaving}
             />
-            <Toolbar
-                activeStates={activeStates}
-                onCommand={(cmd, val) => {
-                    if (cmd === 'insertTable' || cmd === 'insertHTML') {
-                        richEditorRef.current?.applyCommandWithRestore(cmd, val, richEditorRef.current?.restoreSelection);
-                    } else {
-                        richEditorRef.current?.executeCommand(cmd, val);
-                    }
-                }}
-                onTableAction={(action) => richEditorRef.current?.executeTableAction(action)}
-                onSave={() => handleSave()}
-                onShare={handleShare}
-                onPrint={handlePrint}
-                onExport={handleExport}
-                onSearch={() => setIsSearchOpen(!isSearchOpen)}
-                onMediaTrigger={(tab) => {
-                    // Save selection before opening modal using RichEditor ref
-                    richEditorRef.current?.saveSelection();
-                    const sel = window.getSelection();
-                    setSelectionText(sel.toString());
-                    setMediaModal({ isOpen: true, tab });
-                }}
-                onTransformCase={handleTransformCase}
-                onInsertDate={handleInsertDate}
-                stats={stats}
-            />
-            <MediaModal
-                isOpen={mediaModal.isOpen}
-                onClose={() => setMediaModal({ ...mediaModal, isOpen: false })}
-                onSubmit={handleMediaSubmit}
-                initialTab={mediaModal.tab}
-                selectionText={selectionText}
-            />
-            <FindReplace
-                isOpen={isSearchOpen}
-                onClose={() => setIsSearchOpen(false)}
-                editorRef={richEditorRef}
-            />
-            {tableInfo && !isPreviewMode && (
-                <TableContextToolbar
-                    info={tableInfo}
-                    onAction={(action, val) => richEditorRef.current?.executeTableAction(action, val, tableInfo?.table, tableInfo?.rowIndex ?? -1, tableInfo?.colIndex ?? -1)}
-                />
-            )}
-            <TableEdgeControls editorRef={richEditorRef} />
-            <RichEditor
-                ref={richEditorRef}
-                onSelectionChange={updateActiveStates}
-                onContentChange={handleContentChange}
-                onBlur={handleBlur}
-            />
+
+            <div className="editor-main-layout" style={{ display: 'flex', height: 'calc(100vh - 60px)' }}>
+                {/* Sidebar Logic */}
+                {folderId ? (
+                    isSidebarOpen ? (
+                        <Sidebar
+                            activeFileId={id}
+                            rootFolderId={folderId}
+                            onFileOpen={handleFileOpen}
+                            onClose={() => setIsSidebarOpen(false)}
+                        />
+                    ) : (
+                        <div
+                            style={{
+                                width: '24px',
+                                borderRight: '1px solid #e5e7eb',
+                                backgroundColor: '#f9fafb',
+                                display: 'flex',
+                                alignItems: 'start',
+                                paddingTop: '12px',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                color: '#9ca3af'
+                            }}
+                            onClick={() => setIsSidebarOpen(true)}
+                            title="Expand Sidebar"
+                        >
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <line x1="3" y1="12" x2="21" y2="12"></line>
+                                <line x1="3" y1="6" x2="21" y2="6"></line>
+                                <line x1="3" y1="18" x2="21" y2="18"></line>
+                            </svg>
+                        </div>
+                    )
+                ) : null}
+
+                <div className="editor-content-area" style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}>
+                    {!id ? (
+                        <div className="empty-editor-state" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#666' }}>
+                            <div style={{ textAlign: 'center' }}>
+                                <div style={{ fontSize: '48px', marginBottom: '16px' }}>📄</div>
+                                <h3>No Document Selected</h3>
+                                <p>Select a file from the sidebar to start editing.</p>
+                            </div>
+                        </div>
+                    ) : (
+                        <>
+                            <Toolbar
+                                activeStates={activeStates}
+                                // ... props
+                                onCommand={(cmd, val) => {
+                                    if (cmd === 'insertTable' || cmd === 'insertHTML') {
+                                        richEditorRef.current?.applyCommandWithRestore(cmd, val, richEditorRef.current?.restoreSelection);
+                                    } else {
+                                        richEditorRef.current?.executeCommand(cmd, val);
+                                    }
+                                }}
+                                onTableAction={(action) => richEditorRef.current?.executeTableAction(action)}
+                                onSave={() => handleSave()}
+                                onShare={handleShare}
+                                onPrint={handlePrint}
+                                onExport={handleExport}
+                                onSearch={() => setIsSearchOpen(!isSearchOpen)}
+                                onMediaTrigger={(tab) => {
+                                    // Save selection before opening modal using RichEditor ref
+                                    richEditorRef.current?.saveSelection();
+                                    const sel = window.getSelection();
+                                    setSelectionText(sel.toString());
+                                    setMediaModal({ isOpen: true, tab });
+                                }}
+                                onTransformCase={handleTransformCase}
+                                onInsertDate={handleInsertDate}
+                                stats={stats}
+                            />
+                            {/* ... Modals ... */}
+                            <MediaModal
+                                isOpen={mediaModal.isOpen}
+                                onClose={() => setMediaModal({ ...mediaModal, isOpen: false })}
+                                onSubmit={handleMediaSubmit}
+                                initialTab={mediaModal.tab}
+                                selectionText={selectionText}
+                            />
+                            <FindReplace
+                                isOpen={isSearchOpen}
+                                onClose={() => setIsSearchOpen(false)}
+                                editorRef={richEditorRef}
+                            />
+                            {tableInfo && !isPreviewMode && (
+                                <TableContextToolbar
+                                    info={tableInfo}
+                                    onAction={(action, val) => richEditorRef.current?.executeTableAction(action, val, tableInfo?.table, tableInfo?.rowIndex ?? -1, tableInfo?.colIndex ?? -1)}
+                                />
+                            )}
+                            <TableEdgeControls editorRef={richEditorRef} />
+
+                            <div style={{ flex: 1, overflowY: 'auto', position: 'relative' }}>
+                                <RichEditor
+                                    ref={richEditorRef}
+                                    onSelectionChange={updateActiveStates}
+                                    onContentChange={handleContentChange}
+                                    onBlur={handleBlur}
+                                />
+                            </div>
+                        </>
+                    )}
+                </div>
+            </div>
         </div>
     );
 };
