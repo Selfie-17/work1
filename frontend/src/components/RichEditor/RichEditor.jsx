@@ -2,6 +2,8 @@
 
 import 'katex/dist/katex.min.css';
 import katex from 'katex';
+import 'highlight.js/styles/github-dark.css'; // GitHub Dark theme for dark code blocks
+import hljs from 'highlight.js';
 
 import React, { useRef, useImperativeHandle, forwardRef, useEffect, useState } from 'react';
 import './RichEditor.css';
@@ -144,6 +146,46 @@ const RichEditor = forwardRef(({ onSelectionChange, onContentChange, readOnly = 
             sel.addRange(savedRangeRef.current);
         }
     };
+
+    // Initial transform and highlight
+    useEffect(() => {
+        if (editorRef.current) {
+            // We assume these helper functions are available in scope
+            // If they are defined later in the component, they are accessible in the effect
+            try {
+                // transformTextNodes(editorRef.current); // These might cause loops if not careful? 
+                // Actually, standard preview logic usually transforms first.
+                // But transformTextNodes is specific to Math/Code text nodes.
+
+                // transformCodeBlocks is specific to ``` fenced blocks.
+                // transformCodeBlocks(editorRef.current); 
+
+                // Let's just highlight existing code blocks
+                editorRef.current.querySelectorAll('pre code').forEach((block) => {
+                    const pre = block.parentElement;
+                    if (pre && pre.dataset.language) {
+                        block.classList.add(`language-${pre.dataset.language}`);
+                    }
+                    hljs.highlightElement(block);
+                });
+            } catch (e) {
+                console.warn('Highlighting failed or helpers missing:', e);
+            }
+        }
+    });
+
+    // Only run expensive transforms when readOnly changes or content changes?
+    useEffect(() => {
+        if (readOnly && editorRef.current) {
+            editorRef.current.querySelectorAll('pre code').forEach((block) => {
+                const pre = block.parentElement;
+                if (pre && pre.dataset.language && !block.className.includes('language-')) {
+                    block.classList.add(`language-${pre.dataset.language}`);
+                }
+                if (!block.dataset.highlighted) hljs.highlightElement(block);
+            });
+        }
+    }, [readOnly, onContentChange]);
 
     // Accepts an optional restoreSelection function (set via ref by parent)
     const applyCommand = (command, value = null, restoreSelectionFn) => {
@@ -630,6 +672,21 @@ const RichEditor = forwardRef(({ onSelectionChange, onContentChange, readOnly = 
                     const content = processInlineMarkdown(blockquoteMatch[1]);
                     processedLines.push(`<blockquote>${content}</blockquote>`);
                     inList = false;
+                    continue;
+                }
+
+                // Handle task lists
+                const taskMatch = line.match(/^\s*[-*+]\s+\[([x\s])\]\s+(.+)$/i);
+                if (taskMatch) {
+                    const isChecked = taskMatch[1].toLowerCase() === 'x';
+                    const content = processInlineMarkdown(taskMatch[2]);
+                    if (!inList || listType !== 'ul') {
+                        if (inList) processedLines.push(listType === 'ol' ? '</ol>' : '</ul>');
+                        processedLines.push('<ul class="contains-task-list">');
+                        inList = true;
+                        listType = 'ul';
+                    }
+                    processedLines.push(`<li class="task-list-item"><input type="checkbox" ${isChecked ? 'checked' : ''} disabled> ${content}</li>`);
                     continue;
                 }
 

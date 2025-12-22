@@ -38,11 +38,12 @@ mongoose.connect(process.env.MONGODB_URI)
     .catch(err => console.error('MongoDB connection error:', err));
 
 // --- Helper Functions ---
-const ensureUniqueTitle = async (title, authorId, excludeId = null) => {
+const ensureUniqueTitle = async (title, authorId, folderId = null, excludeId = null) => {
     let uniqueTitle = title;
     let counter = 1;
     while (true) {
-        const query = { title: uniqueTitle, author: authorId };
+        // Scope query to specific folder (or null for root)
+        const query = { title: uniqueTitle, author: authorId, folder: folderId };
         if (excludeId) query._id = { $ne: excludeId };
 
         const existing = await Document.findOne(query);
@@ -172,7 +173,7 @@ app.post('/api/docs', async (req, res) => {
     const reRenderedHtml = markdownToHtml(markdown);
 
     try {
-        const uniqueTitle = await ensureUniqueTitle(title, authorId);
+        const uniqueTitle = await ensureUniqueTitle(title, authorId, folderId || null);
         const doc = new Document({
             title: uniqueTitle,
             markdown,
@@ -206,7 +207,7 @@ app.put('/api/docs/:id', async (req, res) => {
         const existingDoc = await Document.findById(req.params.id);
         if (!existingDoc) return res.status(404).json({ message: 'Document not found' });
 
-        const uniqueTitle = await ensureUniqueTitle(title || existingDoc.title, existingDoc.author, req.params.id);
+        const uniqueTitle = await ensureUniqueTitle(title || existingDoc.title, existingDoc.author, existingDoc.folder, req.params.id);
 
         const doc = await Document.findByIdAndUpdate(req.params.id, {
             title: uniqueTitle,
@@ -375,7 +376,7 @@ async function importFromGithubRecursive(owner, repo, branch, path, authorId, pa
                         if (parent) title = parent.name;
                     }
 
-                    const uniqueTitle = await ensureUniqueTitle(title, authorId);
+                    const uniqueTitle = await ensureUniqueTitle(title, authorId, parentFolderId);
                     const doc = new Document({
                         title: uniqueTitle,
                         markdown,
