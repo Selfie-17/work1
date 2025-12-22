@@ -18,7 +18,8 @@
     /* A4-ish height */
     display: flex;
     flex-direction: column;
-    position: relative; /* Added for ImageTransformLayer */
+    position: relative;
+    /* Added for ImageTransformLayer */
 }
 
 .editable-area {
@@ -165,4 +166,52 @@
     border-bottom: 2px solid #e5e7eb;
     margin-left: 0.5rem;
     cursor: nwse-resize;
+}
+
+/* Math Formula Alignment & Layout */
+.math-formula-rendered {
+    position: relative;
+    user-select: none;
+    transition: box-shadow 0.2s;
+}
+
+.math-formula-rendered:hover {
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+    border-radius: 4px;
+}
+
+.math-formula-rendered .katex-display {
+    text-align: inherit !important;
+    margin: 0 !important;
+}
+
+.math-formula-rendered .katex-display>.katex {
+    text-align: inherit !important;
+    display: inline-block !important;
+}
+
+/* Specific Alignment Classes */
+.math-align-left {
+    display: inline-block !important;
+    width: auto !important;
+    text-align: left !important;
+}
+
+.math-align-center {
+    display: block !important;
+    width: 100% !important;
+    text-align: center !important;
+}
+
+.math-align-right {
+    display: block !important;
+    width: 100% !important;
+    text-align: right !important;
+}
+
+/* Default Display state if no class (backward compatibility) */
+.math-formula-rendered[data-display="true"]:not([class*="math-align-"]) {
+    display: block;
+    width: 100%;
+    text-align: center;
 }

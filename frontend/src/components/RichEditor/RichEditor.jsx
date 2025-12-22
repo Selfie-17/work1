@@ -10,6 +10,7 @@ import { useTableResize } from './Table/useTableResize';
 import { useTableOperations } from './Table/useTableOperations';
 import TableOverlay from './Table/TableOverlay';
 import InlineImageEditor from './InlineImageEditor';
+import EquationOverlay from './EquationOverlay';
 
 const transformTextNodes = (node) => {
     if (node.nodeType === 3) { // Text node
@@ -35,16 +36,14 @@ const transformTextNodes = (node) => {
                 // Render Math
                 const span = document.createElement('span');
                 span.contentEditable = "false";
-                span.className = "math-formula-rendered";
+                span.className = "math-formula-rendered math-align-left";
                 span.dataset.latex = formula;
                 span.dataset.display = isDisplay;
                 span.title = "Click to edit";
                 span.style.cursor = "pointer";
                 span.style.padding = "0 2px";
                 if (isDisplay) {
-                    span.style.display = "block";
-                    span.style.textAlign = "center";
-                    span.style.margin = "1em 0";
+                    span.style.display = "inline-block";
                 }
 
                 try {
@@ -56,15 +55,6 @@ const transformTextNodes = (node) => {
                     console.error("Katex Error:", e);
                     span.textContent = match;
                 }
-
-                // Add click listener to revert
-                span.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    // Revert to text
-                    const delimiter = isDisplay ? '$$' : '$';
-                    const textNode = document.createTextNode(`${delimiter}${formula}${delimiter}`);
-                    span.parentNode.replaceChild(textNode, span);
-                });
 
                 fragment.appendChild(span);
 
@@ -94,6 +84,7 @@ const RichEditor = forwardRef(({ onSelectionChange, onContentChange, readOnly = 
     const canvasRef = useRef(null);
     const savedRangeRef = useRef(null);
     const [selectedImage, setSelectedImage] = useState(null);
+    const [selectedEquation, setSelectedEquation] = useState(null);
     const { selection: tableSelection, handleMouseDown: onTableMouseDown, handleMouseMove: onTableMouseMove, handleMouseUp: onTableMouseUp } = useTableSelection(editorRef);
     const { resizeState, handleMouseDown: onTableResizeDown, handleMouseMove: onTableResizeMove } = useTableResize(editorRef);
     const { executeAction } = useTableOperations(editorRef);
@@ -408,6 +399,27 @@ const RichEditor = forwardRef(({ onSelectionChange, onContentChange, readOnly = 
         insertLink,
         insertImage,
         insertVideo,
+        insertEquation: (latex, isDisplay = true) => {
+            editorRef.current.focus();
+            restoreSelection();
+            const delimiter = isDisplay ? '$$' : '$';
+            const value = `\n${delimiter}\n${latex}\n${delimiter}\n`;
+            applyCommand('insertHTML', value);
+            // Run transformation immediately
+            editorRef.current.normalize();
+            transformTextNodes(editorRef.current);
+            handleInput();
+        },
+        updateEquation: (latex, isDisplay, element) => {
+            const delimiter = isDisplay ? '$$' : '$';
+            const textNode = document.createTextNode(`${delimiter}${latex}${delimiter}`);
+            element.parentNode.replaceChild(textNode, element);
+            // Re-transform (or we could just re-render the span, but this is safer for consistency)
+            editorRef.current.normalize();
+            transformTextNodes(editorRef.current);
+            setSelectedEquation(null); // Clear selection after edit
+            handleInput();
+        },
         getHTML: () => editorRef.current.innerHTML,
         setHTML: (html) => { editorRef.current.innerHTML = html; },
         getPlainText: () => editorRef.current.innerText,
@@ -426,7 +438,29 @@ const RichEditor = forwardRef(({ onSelectionChange, onContentChange, readOnly = 
             }
         };
         document.addEventListener('selectionchange', handleSelectionChange);
-        return () => document.removeEventListener('selectionchange', handleSelectionChange);
+
+        // Use event delegation for math formula clicks
+        const container = editorRef.current;
+        const handleMathClick = (e) => {
+            const mathElement = e.target.closest('.math-formula-rendered');
+            if (mathElement) {
+                e.stopPropagation();
+                const latex = mathElement.dataset.latex;
+                const isDisplay = mathElement.dataset.display === 'true';
+                setSelectedEquation({
+                    latex,
+                    isDisplay,
+                    element: mathElement
+                });
+                setSelectedImage(null);
+            }
+        };
+        container.addEventListener('click', handleMathClick);
+
+        return () => {
+            document.removeEventListener('selectionchange', handleSelectionChange);
+            container.removeEventListener('click', handleMathClick);
+        };
     }, [onSelectionChange]);
 
     const handleInput = () => {
@@ -546,16 +580,27 @@ const RichEditor = forwardRef(({ onSelectionChange, onContentChange, readOnly = 
                 e.preventDefault();
                 e.stopPropagation();
                 setSelectedImage(e.target);
+                setSelectedEquation(null);
+            }
+        };
+
+        const handleContainerMouseDown = (e) => {
+            // If not clicking an equation, image, or overlay toolbar, clear selections
+            if (!e.target.closest('.math-formula-rendered') && !e.target.closest('img') && !e.target.closest('.equation-overlay-toolbar')) {
+                setSelectedEquation(null);
+                setSelectedImage(null);
             }
         };
 
         // Aggressively capture clicks on images
         container.addEventListener('click', handleNativeClick, true);
         container.addEventListener('dragstart', handleDragStart, true);
+        container.addEventListener('mousedown', handleContainerMouseDown);
 
         return () => {
             container.removeEventListener('click', handleNativeClick, true);
             container.removeEventListener('dragstart', handleDragStart, true);
+            container.removeEventListener('mousedown', handleContainerMouseDown);
         };
     }, [selectedImage]);
 
@@ -598,6 +643,24 @@ const RichEditor = forwardRef(({ onSelectionChange, onContentChange, readOnly = 
                             handleInput(); // Trigger save
                         }}
                         onCancel={() => setSelectedImage(null)}
+                    />
+                )}
+
+                {/* Equation Contextual Toolbar */}
+                {selectedEquation && !readOnly && (
+                    <EquationOverlay
+                        target={selectedEquation.element}
+                        containerRef={canvasRef}
+                        onAlign={(alignment) => {
+                            const el = selectedEquation.element;
+                            el.classList.remove('math-align-left', 'math-align-center', 'math-align-right');
+                            el.classList.add(`math-align-${alignment}`);
+                            handleInput();
+                        }}
+                        onEdit={() => {
+                            if (onSelectionChange) onSelectionChange('edit-math', selectedEquation);
+                        }}
+                        onCancel={() => setSelectedEquation(null)}
                     />
                 )}
 

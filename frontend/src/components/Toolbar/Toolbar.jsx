@@ -451,6 +451,7 @@ export default function Toolbar({
     onMediaTrigger,
     onTransformCase,
     onInsertDate,
+    onEquationTrigger,
     stats = { words: 0, chars: 0 }
 }) {
     const [showMore, setShowMore] = useState(false);
@@ -519,7 +520,7 @@ export default function Toolbar({
 
                 <Group>
                     <Btn icon={<Icons.Link />} onMouseDown={() => window.__saveSelection && window.__saveSelection()} onClick={() => onMediaTrigger('link')} title="Link" />
-                    <Btn icon={<Icons.Math />} onMouseDown={() => window.__saveSelection && window.__saveSelection()} onClick={() => onCommand("formatMath")} title="Format Math Formulas ($...$)" />
+                    <Btn icon={<Icons.Math />} onMouseDown={() => window.__saveSelection && window.__saveSelection()} onClick={onEquationTrigger} title="Visual Equation Editor" />
                     <SymbolPicker onSelect={s => { window.__saveSelection && window.__saveSelection(); onCommand("insertHTML", s); }} />
                     <TablePicker onInsert={val => { window.__saveSelection && window.__saveSelection(); onCommand("insertTable", val); }} />
                     <Btn icon={<Icons.Image />} onMouseDown={() => window.__saveSelection && window.__saveSelection()} onClick={() => onMediaTrigger('image')} title="Image" />

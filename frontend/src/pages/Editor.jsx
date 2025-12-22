@@ -10,6 +10,7 @@ import API_BASE_URL from '../config';
 import Sidebar from '../components/Sidebar/Sidebar';
 
 import MediaModal from '../components/Toolbar/MediaModal';
+import EquationModal from '../components/Toolbar/EquationModal';
 
 const Editor = () => {
     const { id } = useParams();
@@ -33,6 +34,7 @@ const Editor = () => {
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [stats, setStats] = useState({ chars: 0, words: 0 });
     const [mediaModal, setMediaModal] = useState({ isOpen: false, tab: 'link' });
+    const [equationModal, setEquationModal] = useState({ isOpen: false, latex: '', element: null, isDisplay: true });
     const [selectionText, setSelectionText] = useState('');
     const savedSelection = useRef(null);
     const saveTimeoutRef = useRef(null);
@@ -59,6 +61,16 @@ const Editor = () => {
         }
     }, []);
 
+    const handleEquationSubmit = useCallback((latex) => {
+        if (!richEditorRef.current) return;
+        if (equationModal.element) {
+            richEditorRef.current.updateEquation(latex, equationModal.isDisplay, equationModal.element);
+        } else {
+            richEditorRef.current.insertEquation(latex);
+        }
+        setEquationModal({ isOpen: false, latex: '', element: null, isDisplay: true });
+    }, [equationModal]);
+
     // Fetch document on load
     useEffect(() => {
         const fetchDoc = async () => {
@@ -83,7 +95,12 @@ const Editor = () => {
 
     const [tableInfo, setTableInfo] = useState(null);
 
-    const updateActiveStates = useCallback(() => {
+    const updateActiveStates = useCallback((type, data) => {
+        if (type === 'edit-math') {
+            setEquationModal({ isOpen: true, latex: data.latex, element: data.element, isDisplay: data.isDisplay });
+            return;
+        }
+
         if (!richEditorRef.current) return;
         const editor = richEditorRef.current.getElement();
         const text = editor.innerText || "";
@@ -332,16 +349,30 @@ const Editor = () => {
                                 }}
                                 onTransformCase={handleTransformCase}
                                 onInsertDate={handleInsertDate}
+                                onEquationTrigger={() => {
+                                    richEditorRef.current?.saveSelection();
+                                    setEquationModal({ isOpen: true, latex: '', element: null, isDisplay: true });
+                                }}
                                 stats={stats}
                             />
                             {/* ... Modals ... */}
-                            <MediaModal
-                                isOpen={mediaModal.isOpen}
-                                onClose={() => setMediaModal({ ...mediaModal, isOpen: false })}
-                                onSubmit={handleMediaSubmit}
-                                initialTab={mediaModal.tab}
-                                selectionText={selectionText}
-                            />
+                            {mediaModal.isOpen && (
+                                <MediaModal
+                                    isOpen={mediaModal.isOpen}
+                                    onClose={() => setMediaModal({ ...mediaModal, isOpen: false })}
+                                    onSubmit={handleMediaSubmit}
+                                    initialTab={mediaModal.tab}
+                                    selectionText={selectionText}
+                                />
+                            )}
+                            {equationModal.isOpen && (
+                                <EquationModal
+                                    isOpen={equationModal.isOpen}
+                                    initialLatex={equationModal.latex}
+                                    onCancel={() => setEquationModal({ isOpen: false, latex: '', element: null, isDisplay: true })}
+                                    onInsert={handleEquationSubmit}
+                                />
+                            )}
                             <FindReplace
                                 isOpen={isSearchOpen}
                                 onClose={() => setIsSearchOpen(false)}
