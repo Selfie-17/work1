@@ -1,8 +1,9 @@
 .student-view {
-    min-height: 100vh;
+    height: 100vh;
     display: flex;
     flex-direction: column;
     background-color: #f8fafc;
+    overflow: hidden;
 }
 
 /* Header */

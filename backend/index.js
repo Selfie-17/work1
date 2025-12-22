@@ -435,11 +435,19 @@ app.post('/api/docs/import', async (req, res) => {
 // Get all published documents and folders (public - no auth required)
 app.get('/api/published', async (req, res) => {
     try {
-        const docs = await Document.find({ isPublished: true })
+        // Only return root-level items (no parent folder)
+        // We check for both explicit null and missing field for robustness
+        const docs = await Document.find({
+            isPublished: true,
+            $or: [{ folder: null }, { folder: { $exists: false } }]
+        })
             .select('_id title updatedAt folder')
             .sort({ updatedAt: -1 });
 
-        const folders = await Folder.find({ isPublished: true })
+        const folders = await Folder.find({
+            isPublished: true,
+            $or: [{ parent: null }, { parent: { $exists: false } }]
+        })
             .select('_id name createdAt')
             .sort({ name: 1 });
 
@@ -451,6 +459,7 @@ app.get('/api/published', async (req, res) => {
 });
 
 // Get documents in a published folder (for students)
+// Get documents and subfolders in a published folder (for students)
 app.get('/api/published/folder/:id', async (req, res) => {
     try {
         const folder = await Folder.findById(req.params.id);
@@ -462,10 +471,14 @@ app.get('/api/published/folder/:id', async (req, res) => {
             .select('_id title updatedAt')
             .sort({ title: 1 });
 
-        res.status(200).json({ folder, documents: docs });
+        const folders = await Folder.find({ parent: req.params.id, isPublished: true })
+            .select('_id name createdAt')
+            .sort({ name: 1 });
+
+        res.status(200).json({ folder, documents: docs, folders: folders });
     } catch (error) {
-        console.error('Error fetching folder documents:', error);
-        res.status(500).json({ message: 'Error fetching folder documents' });
+        console.error('Error fetching folder content:', error);
+        res.status(500).json({ message: 'Error fetching folder content' });
     }
 });
 
@@ -508,27 +521,45 @@ app.patch('/api/docs/:id/publish', async (req, res) => {
     }
 });
 
-// Toggle publish status for folder (publishes folder AND all docs inside)
+// Recursive helper to publish/unpublish folder contents
+async function setFolderPublishStatusRecursive(folderId, isPublished) {
+    // 1. Update documents in this folder
+    const docResult = await Document.updateMany(
+        { folder: folderId },
+        { isPublished: isPublished }
+    );
+    let updatedDocsCount = docResult.modifiedCount;
+
+    // 2. Find subfolders
+    const subfolders = await Folder.find({ parent: folderId });
+
+    // 3. Update subfolders and recurse
+    for (const sub of subfolders) {
+        sub.isPublished = isPublished;
+        await sub.save();
+        updatedDocsCount += await setFolderPublishStatusRecursive(sub._id, isPublished);
+    }
+
+    return updatedDocsCount;
+}
+
+// Toggle publish status for folder (publishes folder AND all docs inside RECURSIVELY)
 app.patch('/api/folders/:id/publish', async (req, res) => {
     try {
         const folder = await Folder.findById(req.params.id);
         if (!folder) return res.status(404).json({ message: 'Folder not found' });
 
-        folder.isPublished = !folder.isPublished;
+        const newStatus = !folder.isPublished;
+        folder.isPublished = newStatus;
         await folder.save();
 
-        // Also update all documents in this folder
-        await Document.updateMany(
-            { folder: req.params.id },
-            { isPublished: folder.isPublished }
-        );
-
-        const updatedDocs = await Document.find({ folder: req.params.id });
+        // Recursively update all contents
+        const totalDocsUpdated = await setFolderPublishStatusRecursive(folder._id, newStatus);
 
         res.status(200).json({
-            message: folder.isPublished ? 'Folder published' : 'Folder unpublished',
-            isPublished: folder.isPublished,
-            documentsUpdated: updatedDocs.length
+            message: newStatus ? 'Folder and contents published' : 'Folder and contents unpublished',
+            isPublished: newStatus,
+            documentsUpdated: totalDocsUpdated
         });
     } catch (error) {
         console.error('Error toggling folder publish:', error);

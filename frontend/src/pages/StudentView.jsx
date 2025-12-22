@@ -48,6 +48,7 @@ const StudentView = () => {
 
     // Handle folder selection
     const handleSelectFolder = async (folder) => {
+        setLoading(true);
         setCurrentFolder(folder);
         setSelectedDoc(null);
         try {
@@ -55,9 +56,12 @@ const StudentView = () => {
             if (response.ok) {
                 const data = await response.json();
                 setDocuments(data.documents || []);
+                setFolders(data.folders || []);
             }
         } catch (err) {
             console.error('Failed to load folder:', err);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -142,7 +146,7 @@ const StudentView = () => {
                         ) : (
                             <>
                                 {/* Folders */}
-                                {!currentFolder && folders.map((folder) => (
+                                {folders.map((folder) => (
                                     <button
                                         key={folder._id}
                                         className="file-item folder"
