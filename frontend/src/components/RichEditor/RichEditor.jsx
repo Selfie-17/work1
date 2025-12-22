@@ -12,53 +12,63 @@ import TableOverlay from './Table/TableOverlay';
 import InlineImageEditor from './InlineImageEditor';
 import EquationOverlay from './EquationOverlay';
 
+// Transform text nodes to render math equations AND inline code
 const transformTextNodes = (node) => {
     if (node.nodeType === 3) { // Text node
         const text = node.textContent;
-        // Regex for $$...$$ (Display) or $...$ (Inline)
-        // We use a combined regex. 
-        // Note: Inline math usually shouldn't span multiple lines, but we allow it for flexibility.
-        const regex = /\$\$([\s\S]+?)\$\$|\$([^$]+)\$/g;
+        // Combined regex for: $$...$$ (display math), $...$ (inline math), `...` (inline code)
+        // Order matters: display math first ($$), then inline math ($), then inline code (`)
+        const regex = /\$\$([\s\S]+?)\$\$|\$([^$\n]+)\$|`([^`\n]+)`/g;
 
         if (regex.test(text)) {
+            regex.lastIndex = 0; // Reset regex state after test
             const fragment = document.createDocumentFragment();
             let lastIndex = 0;
 
-            text.replace(regex, (match, displayFormula, inlineFormula, offset) => {
-                const formula = displayFormula || inlineFormula;
-                const isDisplay = !!displayFormula;
-
-                // Add text before math
+            text.replace(regex, (match, displayFormula, inlineFormula, inlineCode, offset) => {
+                // Add text before the match
                 if (offset > lastIndex) {
                     fragment.appendChild(document.createTextNode(text.slice(lastIndex, offset)));
                 }
 
-                // Render Math
-                const span = document.createElement('span');
-                span.contentEditable = "false";
-                span.className = "math-formula-rendered math-align-left";
-                span.dataset.latex = formula;
-                span.dataset.display = isDisplay;
-                span.title = "Click to edit";
-                span.style.cursor = "pointer";
-                span.style.padding = "0 2px";
-                if (isDisplay) {
-                    span.style.display = "inline-block";
-                }
+                if (displayFormula || inlineFormula) {
+                    // Math formula
+                    const formula = displayFormula || inlineFormula;
+                    const isDisplay = !!displayFormula;
 
-                try {
-                    katex.render(formula, span, {
-                        throwOnError: false,
-                        displayMode: isDisplay
-                    });
-                } catch (e) {
-                    console.error("Katex Error:", e);
-                    span.textContent = match;
-                }
+                    const span = document.createElement('span');
+                    span.contentEditable = "false";
+                    span.className = "math-formula-rendered math-align-left";
+                    span.dataset.latex = formula;
+                    span.dataset.display = isDisplay;
+                    span.title = "Click to edit";
+                    span.style.cursor = "pointer";
+                    span.style.padding = "0 2px";
+                    if (isDisplay) {
+                        span.style.display = "inline-block";
+                    }
 
-                fragment.appendChild(span);
+                    try {
+                        katex.render(formula, span, {
+                            throwOnError: false,
+                            displayMode: isDisplay
+                        });
+                    } catch (e) {
+                        console.error("Katex Error:", e);
+                        span.textContent = match;
+                    }
+
+                    fragment.appendChild(span);
+                } else if (inlineCode) {
+                    // Inline code
+                    const code = document.createElement('code');
+                    code.textContent = inlineCode;
+                    code.className = 'inline-code-rendered';
+                    fragment.appendChild(code);
+                }
 
                 lastIndex = offset + match.length;
+                return match; // Required for replace to work correctly
             });
 
             // Add remaining text
@@ -66,15 +76,45 @@ const transformTextNodes = (node) => {
                 fragment.appendChild(document.createTextNode(text.slice(lastIndex)));
             }
 
-            node.parentNode.replaceChild(fragment, node);
-            return true; // Found match
+            if (fragment.childNodes.length > 0) {
+                node.parentNode.replaceChild(fragment, node);
+                return true;
+            }
         }
-    } else if (node.nodeType === 1 && node.nodeName !== 'SCRIPT' && node.nodeName !== 'STYLE' && !node.classList.contains('math-formula-rendered')) {
+    } else if (node.nodeType === 1 && node.nodeName !== 'SCRIPT' && node.nodeName !== 'STYLE' &&
+        node.nodeName !== 'CODE' && node.nodeName !== 'PRE' &&
+        !node.classList.contains('math-formula-rendered')) {
         let found = false;
         Array.from(node.childNodes).forEach(child => {
             if (transformTextNodes(child)) found = true;
         });
         return found;
+    }
+    return false;
+};
+
+// Transform fenced code blocks (```language\ncode\n```)
+const transformCodeBlocks = (container) => {
+    const html = container.innerHTML;
+    // Match fenced code blocks: ```language\ncode\n``` or ```\ncode\n```
+    const codeBlockRegex = /```(\w*)\n?([\s\S]*?)```/g;
+
+    if (codeBlockRegex.test(html)) {
+        codeBlockRegex.lastIndex = 0;
+        const newHtml = html.replace(codeBlockRegex, (match, language, code) => {
+            const escapedCode = code
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .trim();
+            const langAttr = language ? ` data-language="${language}"` : '';
+            return `<pre class="code-block-rendered"${langAttr}><code>${escapedCode}</code></pre>`;
+        });
+        if (newHtml !== html) {
+            container.innerHTML = newHtml;
+            return true;
+        }
     }
     return false;
 };
@@ -478,6 +518,246 @@ const RichEditor = forwardRef(({ onSelectionChange, onContentChange, readOnly = 
         if (onSelectionChange) onSelectionChange();
     };
 
+    // Handle paste to detect and transform markdown content
+    const handlePaste = (e) => {
+        if (readOnly) return;
+
+        // Get plain text from clipboard
+        const text = e.clipboardData?.getData('text/plain');
+        console.log('Paste detected, text length:', text?.length);
+        if (!text) return;
+
+        // Check if the pasted content contains any markdown patterns
+        // More comprehensive detection for markdown
+        const hasHeading = /^#{1,6}\s/m.test(text);
+        const hasList = /^\s*[-*+]\s|^\s*\d+\.\s/m.test(text);
+        const hasBlockquote = /^\s*>/m.test(text);
+        const hasCodeBlock = /```/.test(text);
+        const hasMath = /\$\$|\$[^$\s][^$]*\$/.test(text);
+        const hasInlineCode = /`[^`]+`/.test(text);
+        const hasBold = /\*\*[^*]+\*\*|__[^_]+__/.test(text);
+        const hasItalic = /\*[^*]+\*|_[^_]+_/.test(text);
+        const hasLink = /\[[^\]]+\]\([^)]+\)/.test(text);
+        const hasHR = /^---+$/m.test(text);
+
+        const hasMarkdown = hasHeading || hasList || hasBlockquote || hasCodeBlock ||
+            hasMath || hasInlineCode || hasBold || hasItalic || hasLink || hasHR;
+
+        console.log('Markdown detected:', { hasHeading, hasList, hasBlockquote, hasCodeBlock, hasMath, hasInlineCode, hasBold, hasItalic, hasLink, hasHR });
+
+        if (hasMarkdown) {
+            e.preventDefault();
+            console.log('Processing markdown...');
+
+            // Process markdown line by line for block elements, then inline
+            // Normalize line endings (Windows CRLF -> LF)
+            const normalizedText = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+            const lines = normalizedText.split('\n');
+            let processedLines = [];
+            let inCodeBlock = false;
+            let codeBlockLang = '';
+            let codeBlockContent = [];
+            let inList = false;
+            let listType = null;
+
+            for (let i = 0; i < lines.length; i++) {
+                let line = lines[i];
+
+                // Handle fenced code blocks
+                if (line.match(/^```(\w*)$/)) {
+                    if (!inCodeBlock) {
+                        inCodeBlock = true;
+                        codeBlockLang = line.match(/^```(\w*)$/)[1] || '';
+                        codeBlockContent = [];
+                    } else {
+                        // End code block
+                        const escapedCode = codeBlockContent.join('\n')
+                            .replace(/&/g, '&amp;')
+                            .replace(/</g, '&lt;')
+                            .replace(/>/g, '&gt;');
+                        const langAttr = codeBlockLang ? ` data-language="${codeBlockLang}"` : '';
+                        processedLines.push(`<pre class="code-block-rendered"${langAttr}><code>${escapedCode}</code></pre>`);
+                        inCodeBlock = false;
+                        codeBlockLang = '';
+                    }
+                    continue;
+                }
+
+                if (inCodeBlock) {
+                    codeBlockContent.push(line);
+                    continue;
+                }
+
+                // Handle display math ($$...$$) - check for multi-line
+                if (line.trim() === '$$') {
+                    // Start/end of display math block
+                    let mathContent = [];
+                    i++;
+                    while (i < lines.length && lines[i].trim() !== '$$') {
+                        mathContent.push(lines[i]);
+                        i++;
+                    }
+                    const formula = mathContent.join('\n').trim();
+                    try {
+                        const html = katex.renderToString(formula, { throwOnError: false, displayMode: true });
+                        processedLines.push(`<span contenteditable="false" class="math-formula-rendered math-align-left" data-latex="${formula.replace(/"/g, '&quot;')}" data-display="true" title="Click to edit" style="cursor: pointer; padding: 0 2px; display: inline-block;">${html}</span>`);
+                    } catch (err) {
+                        processedLines.push(`$$${formula}$$`);
+                    }
+                    continue;
+                }
+
+                // Handle headings
+                const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
+                if (headingMatch) {
+                    const level = headingMatch[1].length;
+                    const content = processInlineMarkdown(headingMatch[2]);
+                    processedLines.push(`<h${level}>${content}</h${level}>`);
+                    inList = false;
+                    continue;
+                }
+
+                // Handle horizontal rule
+                if (line.match(/^---+$/)) {
+                    processedLines.push('<hr>');
+                    inList = false;
+                    continue;
+                }
+
+                // Handle blockquotes
+                const blockquoteMatch = line.match(/^>\s*(.*)$/);
+                if (blockquoteMatch) {
+                    const content = processInlineMarkdown(blockquoteMatch[1]);
+                    processedLines.push(`<blockquote>${content}</blockquote>`);
+                    inList = false;
+                    continue;
+                }
+
+                // Handle unordered lists
+                const ulMatch = line.match(/^\s*[-*+]\s+(.+)$/);
+                if (ulMatch) {
+                    const content = processInlineMarkdown(ulMatch[1]);
+                    if (!inList || listType !== 'ul') {
+                        if (inList) processedLines.push(listType === 'ol' ? '</ol>' : '</ul>');
+                        processedLines.push('<ul>');
+                        inList = true;
+                        listType = 'ul';
+                    }
+                    processedLines.push(`<li>${content}</li>`);
+                    continue;
+                }
+
+                // Handle ordered lists
+                const olMatch = line.match(/^\s*(\d+)\.\s+(.+)$/);
+                if (olMatch) {
+                    const content = processInlineMarkdown(olMatch[2]);
+                    if (!inList || listType !== 'ol') {
+                        if (inList) processedLines.push(listType === 'ol' ? '</ol>' : '</ul>');
+                        processedLines.push('<ol>');
+                        inList = true;
+                        listType = 'ol';
+                    }
+                    processedLines.push(`<li>${content}</li>`);
+                    continue;
+                }
+
+                // Close list if we hit a non-list line
+                if (inList && line.trim() !== '') {
+                    processedLines.push(listType === 'ol' ? '</ol>' : '</ul>');
+                    inList = false;
+                    listType = null;
+                }
+
+                // Handle regular paragraph/text with inline markdown
+                if (line.trim()) {
+                    processedLines.push(`<p>${processInlineMarkdown(line)}</p>`);
+                } else {
+                    processedLines.push('<br>');
+                }
+            }
+
+            // Close any open list
+            if (inList) {
+                processedLines.push(listType === 'ol' ? '</ol>' : '</ul>');
+            }
+
+            const processedHtml = processedLines.join('');
+            console.log('Processed HTML (first 500 chars):', processedHtml.substring(0, 500));
+
+            // Insert the processed HTML
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                range.deleteContents();
+
+                const temp = document.createElement('div');
+                temp.innerHTML = processedHtml;
+
+                const fragment = document.createDocumentFragment();
+                while (temp.firstChild) {
+                    fragment.appendChild(temp.firstChild);
+                }
+
+                range.insertNode(fragment);
+                range.collapse(false);
+                selection.removeAllRanges();
+                selection.addRange(range);
+            }
+
+            // Trigger save
+            setTimeout(() => {
+                handleInput();
+            }, 10);
+        }
+    };
+
+    // Helper function to process inline markdown (bold, italic, code, math, links)
+    const processInlineMarkdown = (text) => {
+        let result = text;
+
+        // Handle inline display math first ($$...$$)
+        result = result.replace(/\$\$([^$]+)\$\$/g, (match, formula) => {
+            try {
+                const html = katex.renderToString(formula.trim(), { throwOnError: false, displayMode: true });
+                return `<span contenteditable="false" class="math-formula-rendered math-align-left" data-latex="${formula.trim().replace(/"/g, '&quot;')}" data-display="true" title="Click to edit" style="cursor: pointer; padding: 0 2px; display: inline-block;">${html}</span>`;
+            } catch (err) {
+                return match;
+            }
+        });
+
+        // Handle inline math ($...$)
+        result = result.replace(/\$([^$\n]+)\$/g, (match, formula) => {
+            try {
+                const html = katex.renderToString(formula.trim(), { throwOnError: false, displayMode: false });
+                return `<span contenteditable="false" class="math-formula-rendered math-align-left" data-latex="${formula.trim().replace(/"/g, '&quot;')}" data-display="false" title="Click to edit" style="cursor: pointer; padding: 0 2px;">${html}</span>`;
+            } catch (err) {
+                return match;
+            }
+        });
+
+        // Handle images ![alt](url)
+        result = result.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" style="max-width: 100%; height: auto;">');
+
+        // Handle links [text](url)
+        result = result.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+
+        // Handle bold **text** or __text__
+        result = result.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+        result = result.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+
+        // Handle italic *text* or _text_
+        result = result.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+        result = result.replace(/_([^_]+)_/g, '<em>$1</em>');
+
+        // Handle strikethrough ~~text~~
+        result = result.replace(/~~([^~]+)~~/g, '<del>$1</del>');
+
+        // Handle inline code `code`
+        result = result.replace(/`([^`]+)`/g, '<code class="inline-code-rendered">$1</code>');
+
+        return result;
+    };
+
     // Handle link clicks - Ctrl+Click opens in new tab
     const handleClick = (e) => {
         // Prevent parent navigation/links when interacting with table
@@ -630,6 +910,7 @@ const RichEditor = forwardRef(({ onSelectionChange, onContentChange, readOnly = 
                     onClick={handleClick}
                     onKeyDown={handleKeyDown}
                     onInput={handleInput}
+                    onPaste={handlePaste}
                     placeholder="Start writing your lesson here..."
                 >
                 </div>
