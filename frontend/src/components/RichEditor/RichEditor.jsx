@@ -5,6 +5,8 @@ import katex from 'katex';
 import 'highlight.js/styles/github-dark.css'; // GitHub Dark theme for dark code blocks
 import hljs from 'highlight.js';
 
+import { createRoot } from 'react-dom/client';
+import CodeBlockViewer from './CodeBlockViewer';
 import React, { useRef, useImperativeHandle, forwardRef, useEffect, useState } from 'react';
 import './RichEditor.css';
 import { useTableSelection } from './Table/useTableSelection';
@@ -130,6 +132,48 @@ const RichEditor = forwardRef(({ onSelectionChange, onContentChange, readOnly = 
     const { selection: tableSelection, handleMouseDown: onTableMouseDown, handleMouseMove: onTableMouseMove, handleMouseUp: onTableMouseUp } = useTableSelection(editorRef);
     const { resizeState, handleMouseDown: onTableResizeDown, handleMouseMove: onTableResizeMove } = useTableResize(editorRef);
     const { executeAction } = useTableOperations(editorRef);
+    const [contentUpdateTrigger, setContentUpdateTrigger] = useState(0);
+    const monacoRootsRef = useRef([]);
+
+    useEffect(() => {
+        const cleanupMonaco = () => {
+            monacoRootsRef.current.forEach(({ root }) => {
+                setTimeout(() => root.unmount(), 0);
+            });
+            monacoRootsRef.current = [];
+        };
+
+        if (readOnly && editorRef.current) {
+            cleanupMonaco();
+            const blocks = editorRef.current.querySelectorAll('pre');
+            blocks.forEach((pre) => {
+                const codeEl = pre.querySelector('code');
+                // Only process if it has code element and hasn't been processed
+                if (!codeEl || pre.style.display === 'none') return;
+
+                let language = pre.dataset.language || '';
+                if (!language) {
+                    const classes = codeEl.className.split(' ');
+                    const langClass = classes.find(c => c.startsWith('language-'));
+                    if (langClass) language = langClass.replace('language-', '');
+                }
+
+                const code = codeEl.textContent;
+                const container = document.createElement('div');
+                container.className = 'monaco-container-wrapper';
+
+                // Replace strictly? Or hide? Hiding is safer to keep DOM structure for getHTML if needed
+                pre.parentNode.insertBefore(container, pre);
+                pre.style.display = 'none';
+
+                const root = createRoot(container);
+                root.render(<CodeBlockViewer code={code} language={language} />);
+                monacoRootsRef.current.push({ root, pre });
+            });
+        }
+
+        return cleanupMonaco;
+    }, [readOnly, contentUpdateTrigger]);
 
     // Selection save/restore logic
     const saveSelection = () => {
@@ -503,7 +547,11 @@ const RichEditor = forwardRef(({ onSelectionChange, onContentChange, readOnly = 
             handleInput();
         },
         getHTML: () => editorRef.current.innerHTML,
-        setHTML: (html) => { editorRef.current.innerHTML = html; },
+        getHTML: () => editorRef.current.innerHTML,
+        setHTML: (html) => {
+            editorRef.current.innerHTML = html;
+            setContentUpdateTrigger(prev => prev + 1);
+        },
         getPlainText: () => editorRef.current.innerText,
         focus: () => editorRef.current.focus(),
         getElement: () => editorRef.current,
