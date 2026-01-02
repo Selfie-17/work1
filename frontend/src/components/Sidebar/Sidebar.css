@@ -55,7 +55,7 @@
     cursor: pointer;
     transition: background-color 0.1s;
     white-space: nowrap;
-    overflow: hidden;
+    /* overflow: hidden; Removed to allow dropdown to be visible */
     text-overflow: ellipsis;
     height: 32px;
 }

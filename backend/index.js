@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const archiver = require('archiver');
 require('dotenv').config();
 
 const User = require('./models/User');
@@ -305,6 +306,82 @@ app.delete('/api/folders/:id', async (req, res) => {
     } catch (error) {
         console.error('Error deleting folder:', error);
         res.status(500).json({ message: 'Error deleting folder' });
+    }
+});
+
+// Recursive helper to add folder contents to archive
+async function addFolderToArchive(archive, folderId, basePath = '') {
+    // 1. Add files in this folder
+    const docs = await Document.find({ folder: folderId });
+    for (const doc of docs) {
+        const fileName = `${doc.title}.md`;
+        const filePath = basePath ? `${basePath}/${fileName}` : fileName;
+        archive.append(doc.markdown, { name: filePath });
+    }
+
+    // 2. Add subfolders
+    const subfolders = await Folder.find({ parent: folderId });
+    for (const sub of subfolders) {
+        const subPath = basePath ? `${basePath}/${sub.name}` : sub.name;
+        // Ensure empty folders are added (optional, archiver handles files mostly)
+        // archive.append(null, { name: subPath + '/' }); 
+        await addFolderToArchive(archive, sub._id, subPath);
+    }
+}
+
+// Download Folder as ZIP
+app.get('/api/folders/:id/download', async (req, res) => {
+    try {
+        const folder = await Folder.findById(req.params.id);
+        if (!folder) return res.status(404).json({ message: 'Folder not found' });
+
+        res.attachment(`${folder.name}.zip`);
+
+        const archive = archiver('zip', {
+            zlib: { level: 9 } // Sets the compression level.
+        });
+
+        // Listen for all archive data to be written
+        // 'close' event is fired only when a file descriptor is involved
+        res.on('close', function () {
+            console.log(archive.pointer() + ' total bytes');
+            console.log('archiver has been finalized and the output file descriptor has closed.');
+        });
+
+        // This event is fired when the data source is drained no matter what was the data source.
+        // It is not part of this library but rather from the NodeJS Stream API.
+        // @see: https://nodejs.org/api/stream.html#stream_event_end
+        res.on('end', function () {
+            console.log('Data has been drained');
+        });
+
+        // good practice to catch warnings (ie stat failures and other non-blocking errors)
+        archive.on('warning', function (err) {
+            if (err.code === 'ENOENT') {
+                // log warning
+                console.warn(err);
+            } else {
+                // throw error
+                throw err;
+            }
+        });
+
+        // good practice to catch this error explicitly
+        archive.on('error', function (err) {
+            res.status(500).send({ error: err.message });
+        });
+
+        // pipe archive data to the file
+        archive.pipe(res);
+
+        // Start recursive addition
+        await addFolderToArchive(archive, folder._id, folder.name);
+
+        archive.finalize();
+
+    } catch (error) {
+        console.error('Error downloading folder:', error);
+        res.status(500).json({ message: 'Error processing download' });
     }
 });
 

@@ -21,7 +21,7 @@ const findParent = (nodes, childId) => {
 const SidebarItem = ({
     item, level, activeFileId, onSelect, onOpen,
     expandedFolders, toggleFolder,
-    activeMenuId, onToggleMenu, onDeleteFolder
+    activeMenuId, onToggleMenu, onDeleteFolder, onDownloadFolder
 }) => {
     const isFolder = item.type === 'folder';
     const isExpanded = expandedFolders.has(item._id);
@@ -56,6 +56,12 @@ const SidebarItem = ({
         onToggleMenu(null); // Close menu
     };
 
+    const handleDownload = (e) => {
+        e.stopPropagation();
+        onDownloadFolder(item._id);
+        onToggleMenu(null);
+    };
+
     return (
         <>
             <div
@@ -83,6 +89,9 @@ const SidebarItem = ({
                         </div>
                         {isMenuOpen && (
                             <div className="sidebar-dropdown">
+                                <div className="sidebar-dropdown-item download" onClick={handleDownload} title="Download as ZIP">
+                                    ⬇ Download
+                                </div>
                                 <div className="sidebar-dropdown-item delete" onClick={handleDelete}>
                                     🗑 Delete
                                 </div>
@@ -106,6 +115,7 @@ const SidebarItem = ({
                             activeMenuId={activeMenuId}
                             onToggleMenu={onToggleMenu}
                             onDeleteFolder={onDeleteFolder}
+                            onDownloadFolder={onDownloadFolder}
                         />
                     ))}
                 </div>
@@ -247,6 +257,10 @@ const Sidebar = ({ activeFileId, onFileOpen, rootFolderId, onClose }) => {
         }
     };
 
+    const handleDownloadFolder = (folderId) => {
+        window.open(`${API_BASE_URL}/folders/${folderId}/download`, '_blank');
+    };
+
     return (
         <div className="sidebar-container">
             <div className="sidebar-header">
@@ -271,6 +285,7 @@ const Sidebar = ({ activeFileId, onFileOpen, rootFolderId, onClose }) => {
                         activeMenuId={activeMenuId}
                         onToggleMenu={setActiveMenuId}
                         onDeleteFolder={handleDeleteFolder}
+                        onDownloadFolder={handleDownloadFolder}
                     />
                 ))}
                 {!loading && folderContext.length === 0 && (
