@@ -2,7 +2,6 @@
 
 import 'katex/dist/katex.min.css';
 import katex from 'katex';
-import 'highlight.js/styles/github-dark.css'; // GitHub Dark theme for dark code blocks
 import hljs from 'highlight.js';
 
 import { createRoot } from 'react-dom/client';
