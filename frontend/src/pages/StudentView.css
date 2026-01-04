@@ -222,6 +222,7 @@
     overflow: auto;
     padding: 1.5rem;
     transition: all 0.3s ease;
+    /* Removed custom background to let it blend or use parent's */
 }
 
 .student-main.full-width {
@@ -229,16 +230,21 @@
 }
 
 .document-preview {
-    max-width: 900px;
-    margin: 0 auto;
+    width: 85%;
+    /* Reduced width */
+    max-width: none;
+    margin: 20px auto;
+    /* Centered with vertical margin */
     background: white;
-    border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border-radius: 16px;
+    /* Rounded parent border */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     overflow: hidden;
+    min-height: 90%;
 }
 
 .doc-header {
-    padding: 1.25rem 1.5rem;
+    padding: 1.25rem 2rem;
     border-bottom: 1px solid #e2e8f0;
     background: #f8fafc;
 }
@@ -251,7 +257,18 @@
 }
 
 .doc-content {
-    padding: 0;
+    padding: 2rem;
+}
+
+/* Force override of RichEditor Page View styles for Student View */
+.student-view .editable-area {
+    width: 100% !important;
+    max-width: none !important;
+    min-height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
 }
 
 /* Override RichEditor styles for student view */
@@ -263,7 +280,7 @@
 .student-view .document-canvas {
     box-shadow: none;
     border-radius: 0;
-    min-height: 500px;
+    min-height: auto;
 }
 
 /* No Selection State */

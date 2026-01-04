@@ -4,7 +4,7 @@
 /* Main container */
 .code-block {
     margin: 16px 0;
-    background: #eef2f8;
+    background: #f3fcfe;
     border-radius: 12px;
     overflow: hidden;
     font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace;
@@ -56,6 +56,9 @@
 .code-block-content {
     padding: 0 20px 20px 20px;
     overflow-x: auto;
+    max-height: 400px;
+    /* Approx 15-20 lines */
+    overflow-y: auto;
 }
 
 .code-block-content pre {
